@@ -267,6 +267,10 @@ def _read_info_ccid(conn, key_type, interfaces):
     if USB_INTERFACE.FIDO in interfaces or version >= (3, 3, 0):
         capabilities |= CAPABILITY.U2F
 
+    # old FW disables FIDO selection from CCID
+    if key_type == YUBIKEY.CK:
+        capabilities |= CAPABILITY.FIDO2
+
     return DeviceInfo(
         config=DeviceConfig(
             enabled_capabilities={},  # Populated later

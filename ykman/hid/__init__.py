@@ -70,7 +70,7 @@ class CtapYubiKeyDevice(YkmanDevice):
 def list_ctap_devices() -> List[CtapYubiKeyDevice]:
     devs = []
     for desc in list_descriptors():
-        if desc.vid == 0x1050:
+        if desc.vid == 0x20a0:
             try:
                 devs.append(CtapYubiKeyDevice(desc))
             except ValueError:

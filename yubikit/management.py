@@ -335,6 +335,7 @@ class _ManagementOtpBackend(_Backend):
     def write_config(self, config):
         self.protocol.send_and_receive(SLOT_YK4_SET_DEVICE_INFO, config)
 
+ADMIN_INS_READ_VERSION = 0x31
 
 INS_READ_CONFIG = 0x1D
 INS_WRITE_CONFIG = 0x1C
@@ -346,12 +347,8 @@ class _ManagementSmartCardBackend(_Backend):
     def __init__(self, smartcard_connection):
         self.protocol = SmartCardProtocol(smartcard_connection)
         select_str = self.protocol.select(AID.MANAGEMENT).decode()
-        self.version = Version.from_string(select_str)
-        # For YubiKey NEO, we use the OTP application for further commands
-        if self.version[0] == 3:
-            # Workaround to "de-select" on NEO, otherwise it gets stuck.
-            self.protocol.connection.send_and_receive(b"\xa4\x04\x00\x08")
-            self.protocol.select(AID.OTP)
+        # self.version = Version.from_string(select_str)
+        self.version = Version.from_string(self.protocol.send_apdu(0, ADMIN_INS_READ_VERSION, 0, 0).decode())
 
     def close(self):
         self.protocol.close()

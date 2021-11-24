@@ -78,7 +78,7 @@ class AID(bytes, Enum):
     """YubiKey Application smart card AID values."""
 
     OTP = bytes.fromhex("a0000005272001")
-    MANAGEMENT = bytes.fromhex("a000000527471117")
+    MANAGEMENT = bytes.fromhex("f000000000")
     OPENPGP = bytes.fromhex("d27600012401")
     OATH = bytes.fromhex("a0000005272101")
     PIV = bytes.fromhex("a000000308")

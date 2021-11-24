@@ -35,6 +35,7 @@ from typing import Optional, Hashable
 class YUBIKEY(Enum):
     """YubiKey hardware platforms."""
 
+    CK = "CanoKey"
     YKS = "YubiKey Standard"
     NEO = "YubiKey NEO"
     SKY = "Security Key by Yubico"
@@ -52,6 +53,7 @@ class YUBIKEY(Enum):
 class PID(IntEnum):
     """USB Product ID values for YubiKey devices."""
 
+    CK_FIDO_CCID = 0x42d4
     YKS_OTP = 0x0010
     NEO_OTP = 0x0110
     NEO_OTP_CCID = 0x0111
