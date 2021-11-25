@@ -136,7 +136,7 @@ def access():
     """Manage PIN, Reset Code, and Admin PIN."""
 
 
-@access.command("set-retries")
+# @access.command("set-retries")
 @click.argument("pin-retries", type=click.IntRange(1, 99), metavar="PIN-RETRIES")
 @click.argument(
     "reset-code-retries", type=click.IntRange(1, 99), metavar="RESET-CODE-RETRIES"
@@ -182,8 +182,8 @@ def keys():
 
 
 @keys.command("set-touch")
-@click.argument("key", metavar="KEY", type=EnumChoice(KEY_SLOT))
-@click.argument("policy", metavar="POLICY", type=EnumChoice(TOUCH_MODE))
+@click.argument("key", metavar="KEY", type=EnumChoice(KEY_SLOT, hidden=[KEY_SLOT.ATT]))
+@click.argument("policy", metavar="POLICY", type=EnumChoice(TOUCH_MODE, hidden=[TOUCH_MODE.CACHED, TOUCH_MODE.CACHED_FIXED]))
 @click.option("-a", "--admin-pin", help="Admin PIN for OpenPGP.")
 @click_force_option
 @click.pass_context
@@ -244,7 +244,7 @@ def set_touch(ctx, key, policy, admin_pin, force):
             cli_fail("Failed to set touch policy.")
 
 
-@keys.command("import")
+# @keys.command("import")
 @click.option("-a", "--admin-pin", help="Admin PIN for OpenPGP.")
 @click.pass_context
 @click.argument("key", metavar="KEY", type=EnumChoice(KEY_SLOT))
@@ -278,7 +278,7 @@ def import_key(ctx, key, private_key, admin_pin):
         cli_fail("Failed to import attestation key.")
 
 
-@keys.command()
+# @keys.command()
 @click.pass_context
 @click.option("-P", "--pin", help="PIN code.")
 @click_format_option
@@ -331,7 +331,7 @@ def certificates():
 
 @certificates.command("export")
 @click.pass_context
-@click.argument("key", metavar="KEY", type=EnumChoice(KEY_SLOT))
+@click.argument("key", metavar="KEY", type=EnumChoice(KEY_SLOT, hidden=[KEY_SLOT.ATT]))
 @click_format_option
 @click.argument("certificate", type=click.File("wb"), metavar="CERTIFICATE")
 def export_certificate(ctx, key, format, certificate):
@@ -344,8 +344,8 @@ def export_certificate(ctx, key, format, certificate):
     """
     controller = ctx.obj["controller"]
 
-    if controller.version < (5, 2, 0) and key != KEY_SLOT.AUT:
-        cli_fail(f"Certificate slot {key.name} requires YubiKey 5.2.0 or later.")
+    # if controller.version < (5, 2, 0) and key != KEY_SLOT.AUT:
+    #     cli_fail(f"Certificate slot {key.name} requires YubiKey 5.2.0 or later.")
 
     try:
         cert = controller.read_certificate(key)
@@ -357,7 +357,7 @@ def export_certificate(ctx, key, format, certificate):
 @certificates.command("delete")
 @click.option("-a", "--admin-pin", help="Admin PIN for OpenPGP.")
 @click.pass_context
-@click.argument("key", metavar="KEY", type=EnumChoice(KEY_SLOT))
+@click.argument("key", metavar="KEY", type=EnumChoice(KEY_SLOT, hidden=[KEY_SLOT.ATT]))
 def delete_certificate(ctx, key, admin_pin):
     """
     Delete an OpenPGP certificate.
@@ -367,8 +367,8 @@ def delete_certificate(ctx, key, admin_pin):
     """
     controller = ctx.obj["controller"]
 
-    if controller.version < (5, 2, 0) and key != KEY_SLOT.AUT:
-        cli_fail(f"Certificate slot {key.name} requires YubiKey 5.2.0 or later.")
+    # if controller.version < (5, 2, 0) and key != KEY_SLOT.AUT:
+    #     cli_fail(f"Certificate slot {key.name} requires YubiKey 5.2.0 or later.")
 
     if admin_pin is None:
         admin_pin = click_prompt("Enter Admin PIN", hide_input=True)
@@ -383,7 +383,7 @@ def delete_certificate(ctx, key, admin_pin):
 @certificates.command("import")
 @click.option("-a", "--admin-pin", help="Admin PIN for OpenPGP.")
 @click.pass_context
-@click.argument("key", metavar="KEY", type=EnumChoice(KEY_SLOT))
+@click.argument("key", metavar="KEY", type=EnumChoice(KEY_SLOT, hidden=[KEY_SLOT.ATT]))
 @click.argument("cert", type=click.File("rb"), metavar="CERTIFICATE")
 def import_certificate(ctx, key, cert, admin_pin):
     """
@@ -395,8 +395,8 @@ def import_certificate(ctx, key, cert, admin_pin):
     """
     controller = ctx.obj["controller"]
 
-    if controller.version < (5, 2, 0) and key != KEY_SLOT.AUT:
-        cli_fail(f"Certificate slot {key.name} requires YubiKey 5.2.0 or later.")
+    # if controller.version < (5, 2, 0) and key != KEY_SLOT.AUT:
+    #     cli_fail(f"Certificate slot {key.name} requires YubiKey 5.2.0 or later.")
 
     if admin_pin is None:
         admin_pin = click_prompt("Enter Admin PIN", hide_input=True)

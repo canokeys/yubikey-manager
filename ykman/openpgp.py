@@ -326,7 +326,11 @@ class OpenPgpController(object):
                 protocol.select(AID.OPENPGP)
             else:
                 raise
-        self._version = self._read_version()
+        self._version = (4, 3, 0) #self._read_version()
+        try:
+            self.get_touch(KEY_SLOT.SIG)
+        except ApduError as e:
+            self._version = (4, 2, 0) # Touch policy unsupported
 
     @property
     def version(self):
@@ -340,11 +344,7 @@ class OpenPgpController(object):
 
     def _select_certificate(self, key_slot):
         try:
-            require_version(self.version, (5, 2, 0))
             data: bytes = Tlv(0x60, Tlv(0x5C, b"\x7f\x21"))
-            if self.version <= (5, 4, 3):
-                # These use a non-standard byte in the command.
-                data = b"\x06" + data  # 6 is the length of the data.
             self._app.send_apdu(
                 0,
                 INS.SELECT_DATA,
@@ -428,6 +428,7 @@ class OpenPgpController(object):
 
     @property
     def supports_attestation(self):
+        return False
         return self.version >= (5, 2, 1)
 
     def get_touch(self, key_slot):
@@ -502,8 +503,6 @@ class OpenPgpController(object):
 
     def generate_rsa_key(self, key_slot, key_size, timestamp=None):
         """Requires Admin PIN verification."""
-        if (4, 2, 0) <= self.version < (4, 3, 5):
-            raise NotSupportedError("RSA key generation not supported on this YubiKey")
 
         if timestamp is None:
             timestamp = int(time.time())
@@ -512,7 +511,7 @@ class OpenPgpController(object):
         if not neo:
             attributes = _format_rsa_attributes(key_size)
             self._put_data(key_slot.key_id, attributes)
-        elif key_size != 2048:
+        if key_size != 2048:
             raise ValueError("Unsupported key size!")
         resp = self._app.send_apdu(0, INS.GENERATE_ASYM, 0x80, 0x00, key_slot.crt)
 
@@ -525,7 +524,6 @@ class OpenPgpController(object):
         return numbers.public_key(default_backend())
 
     def generate_ec_key(self, key_slot, curve_name, timestamp=None):
-        require_version(self.version, (5, 2, 0))
         """Requires Admin PIN verification."""
         if timestamp is None:
             timestamp = int(time.time())
@@ -595,7 +593,7 @@ def get_openpgp_info(controller: OpenPgpController) -> str:
     """Get human readable information about the OpenPGP configuration."""
     lines = []
     lines.append("OpenPGP version: %d.%d" % controller.get_openpgp_version())
-    lines.append("Application version: %d.%d.%d" % controller.version)
+    # lines.append("Application version: %d.%d.%d" % controller.version)
     lines.append("")
     retries = controller.get_remaining_pin_tries()
     lines.append(f"PIN tries remaining: {retries.pin}")

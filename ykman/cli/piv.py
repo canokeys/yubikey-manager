@@ -228,7 +228,7 @@ def access():
     """Manage PIN, PUK, and Management Key."""
 
 
-@access.command("set-retries")
+# @access.command("set-retries")
 @click.pass_context
 @click.argument("pin-retries", type=click.IntRange(1, 255), metavar="PIN-RETRIES")
 @click.argument("puk-retries", type=click.IntRange(0, 255), metavar="PUK-RETRIES")
