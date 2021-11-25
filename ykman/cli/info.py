@@ -38,6 +38,7 @@ from ..device import is_fips_version, get_name, connect_to_device
 from ..otp import is_in_fips_mode as otp_in_fips_mode
 from ..oath import is_in_fips_mode as oath_in_fips_mode
 from ..fido import is_in_fips_mode as ctap_in_fips_mode
+from typing import List
 
 import click
 import logging
@@ -45,7 +46,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-SHOWN_CAPABILITIES = set(CAPABILITY) - {CAPABILITY.HSMAUTH}
+SHOWN_CAPABILITIES = set(CAPABILITY)
 
 
 def print_app_status_table(supported_apps, enabled_apps):
@@ -74,7 +75,7 @@ def print_app_status_table(supported_apps, enabled_apps):
         else:
             rows.append([str(app), usb_status])
 
-    column_l = []
+    column_l: List[int] = []
     for row in rows:
         for idx, c in enumerate(row):
             if len(column_l) > idx:
@@ -109,14 +110,14 @@ def get_overall_fips_status(pid, info):
     statuses["OTP"] = False
     if usb_enabled & CAPABILITY.OTP:
         with connect_to_device(info.serial, [OtpConnection])[0] as conn:
-            app = YubiOtpSession(conn)
-            statuses["OTP"] = otp_in_fips_mode(app)
+            otp_app = YubiOtpSession(conn)
+            statuses["OTP"] = otp_in_fips_mode(otp_app)
 
     statuses["OATH"] = False
     if usb_enabled & CAPABILITY.OATH:
         with connect_to_device(info.serial, [SmartCardConnection])[0] as conn:
-            app = OathSession(conn)
-            statuses["OATH"] = oath_in_fips_mode(app)
+            oath_app = OathSession(conn)
+            statuses["OATH"] = oath_in_fips_mode(oath_app)
 
     statuses["FIDO U2F"] = False
     if usb_enabled & CAPABILITY.U2F:
@@ -141,7 +142,8 @@ def _check_fips_status(pid, info):
 @click.option(
     "-c",
     "--check-fips",
-    help="Check if YubiKey is in FIPS Approved mode (YubiKey FIPS only).",
+    help="Check if YubiKey is in FIPS Approved mode (available on YubiKey 4 FIPS "
+    "only).",
     is_flag=True,
 )
 @click.command()
@@ -201,4 +203,4 @@ def info(ctx, check_fips):
             ctx.obj["conn"].close()
             _check_fips_status(pid, info)
         else:
-            cli_fail("Not a YubiKey FIPS")
+            cli_fail("Unable to check FIPS Approved mode - Not a YubiKey 4 FIPS")

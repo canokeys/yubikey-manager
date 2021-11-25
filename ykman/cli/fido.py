@@ -34,6 +34,7 @@ from fido2.ctap2 import (
     FPBioEnrollment,
     CaptureError,
 )
+from fido2.pcsc import CtapPcscDevice
 from yubikit.core.fido import FidoConnection
 from yubikit.core.smartcard import SW
 from time import sleep
@@ -48,6 +49,9 @@ from .util import cli_fail
 from ..fido import is_in_fips_mode, fips_reset, fips_change_pin, fips_verify_pin
 from ..hid import list_ctap_devices
 from ..device import is_fips_version
+from ..pcsc import list_devices as list_ccid
+from smartcard.Exceptions import NoCardException, CardConnectionException
+from typing import Optional
 
 import click
 import logging
@@ -156,11 +160,58 @@ def reset(ctx, force):
     inserted, and requires a touch on the YubiKey.
     """
 
-    n_keys = len(list_ctap_devices())
-    if n_keys > 1:
-        cli_fail("Only one YubiKey can be connected to perform a reset.")
+    conn = ctx.obj["conn"]
 
-    is_fips = is_fips_version(ctx.obj["info"].version)
+    if isinstance(conn, CtapPcscDevice):  # NFC
+        readers = list_ccid(conn._name)
+        if not readers or readers[0].reader.name != conn._name:
+            logger.error(f"Multiple readers matched: {readers}")
+            cli_fail("Unable to isolate NFC reader.")
+        dev = readers[0]
+        logger.debug(f"use: {dev}")
+        is_fips = False
+
+        def prompt_re_insert():
+            click.echo(
+                "Remove and re-place your YubiKey on the NFC reader to perform the "
+                "reset..."
+            )
+
+            removed = False
+            while True:
+                sleep(0.5)
+                try:
+                    with dev.open_connection(FidoConnection):
+                        if removed:
+                            sleep(1.0)  # Wait for the device to settle
+                            break
+                except CardConnectionException:
+                    pass  # Expected, ignore
+                except NoCardException:
+                    removed = True
+            return dev.open_connection(FidoConnection)
+
+    else:  # USB
+        n_keys = len(list_ctap_devices())
+        if n_keys > 1:
+            cli_fail("Only one YubiKey can be connected to perform a reset.")
+        is_fips = is_fips_version(ctx.obj["info"].version)
+
+        ctap2 = ctx.obj.get("ctap2")
+        if not is_fips and not ctap2:
+            cli_fail("This YubiKey does not support FIDO reset.")
+
+        def prompt_re_insert():
+            click.echo("Remove and re-insert your YubiKey to perform the reset...")
+
+            removed = False
+            while True:
+                sleep(0.5)
+                keys = list_ctap_devices()
+                if not keys:
+                    removed = True
+                if removed and len(keys) == 1:
+                    return keys[0].open_connection(FidoConnection)
 
     if not force:
         if not click.confirm(
@@ -169,31 +220,7 @@ def reset(ctx, force):
             err=True,
         ):
             ctx.abort()
-
-    def prompt_re_insert_key():
-        click.echo("Remove and re-insert your YubiKey to perform the reset...")
-
-        removed = False
-        while True:
-            sleep(0.5)
-            keys = list_ctap_devices()
-            if not keys:
-                removed = True
-            if removed and len(keys) == 1:
-                return keys[0]
-
-    def try_reset():
-        if not force:
-            dev = prompt_re_insert_key()
-            conn = dev.open_connection(FidoConnection)
-        with prompt_timeout():
-            if is_fips:
-                fips_reset(conn)
-            else:
-                Ctap2(conn).reset()
-
-    if is_fips:
-        if not force:
+        if is_fips:
             destroy_input = click_prompt(
                 "WARNING! This is a YubiKey FIPS device. This command will also "
                 "overwrite the U2F attestation key; this action cannot be undone and "
@@ -205,42 +232,39 @@ def reset(ctx, force):
             if destroy_input != "OVERWRITE":
                 cli_fail("Reset aborted by user.")
 
-        try:
-            try_reset()
+        conn = prompt_re_insert()
 
-        except ApduError as e:
-            logger.error("Reset failed", exc_info=e)
-            if e.code == SW.COMMAND_NOT_ALLOWED:
-                cli_fail(
-                    "Reset failed. Reset must be triggered within 5 seconds after the "
-                    "YubiKey is inserted."
-                )
+    try:
+        with prompt_timeout():
+            if is_fips:
+                fips_reset(conn)
             else:
-                cli_fail("Reset failed.")
-
-        except Exception as e:
-            logger.error("Reset failed", exc_info=e)
+                Ctap2(conn).reset()
+    except CtapError as e:
+        logger.error("Reset failed", exc_info=e)
+        if e.code == CtapError.ERR.ACTION_TIMEOUT:
+            cli_fail(
+                "Reset failed. You need to touch your YubiKey to confirm the reset."
+            )
+        elif e.code in (CtapError.ERR.NOT_ALLOWED, CtapError.ERR.PIN_AUTH_BLOCKED):
+            cli_fail(
+                "Reset failed. Reset must be triggered within 5 seconds after the "
+                "YubiKey is inserted."
+            )
+        else:
+            cli_fail(f"Reset failed: {e.code.name}")
+    except ApduError as e:  # From fips_reset
+        logger.error("Reset failed", exc_info=e)
+        if e.code == SW.COMMAND_NOT_ALLOWED:
+            cli_fail(
+                "Reset failed. Reset must be triggered within 5 seconds after the "
+                "YubiKey is inserted."
+            )
+        else:
             cli_fail("Reset failed.")
-
-    else:
-        try:
-            try_reset()
-        except CtapError as e:
-            logger.error(e)
-            if e.code == CtapError.ERR.ACTION_TIMEOUT:
-                cli_fail(
-                    "Reset failed. You need to touch your YubiKey to confirm the reset."
-                )
-            elif e.code == CtapError.ERR.NOT_ALLOWED:
-                cli_fail(
-                    "Reset failed. Reset must be triggered within 5 seconds after the "
-                    "YubiKey is inserted."
-                )
-            else:
-                cli_fail(f"Reset failed: {e.code.name}")
-        except Exception as e:
-            logger.error(e)
-            cli_fail("Reset failed.")
+    except Exception as e:
+        logger.error(e)
+        cli_fail("Reset failed.")
 
 
 def _fail_pin_error(ctx, e, other="%s"):
@@ -297,14 +321,14 @@ def change_pin(ctx, pin, new_pin, u2f):
         conn = ctx.obj["conn"]
     else:
         ctap2 = ctx.obj.get("ctap2")
+        if not ctap2:
+            cli_fail("PIN is not supported on this YubiKey.")
         client_pin = ClientPin(ctap2)
 
     def prompt_new_pin():
         return click_prompt(
             "Enter your new PIN",
-            default="",
             hide_input=True,
-            show_default=False,
             confirmation_prompt=True,
         )
 
@@ -433,7 +457,7 @@ def verify(ctx, pin):
 
 
 def _prompt_current_pin(prompt="Enter your current PIN"):
-    return click_prompt(prompt, default="", hide_input=True, show_default=False)
+    return click_prompt(prompt, hide_input=True)
 
 
 def _fail_if_not_valid_pin(ctx, pin=None, is_fips=False):
@@ -661,8 +685,8 @@ def bio_rename(ctx, template_id, name, pin):
     ID          The ID of the fingerprint to rename (as shown in "list").
     NAME        A short readable name for the fingerprint (eg. "Left thumb").
     """
-    if len(name) >= 16:
-        ctx.fail("Fingerprint name must be a maximum of 15 characters")
+    if len(name.encode()) >= 16:
+        ctx.fail("Fingerprint name must be a maximum of 15 bytes")
 
     bio = _init_bio(ctx, pin)
     enrollments = bio.enumerate_enrollments()
@@ -690,7 +714,7 @@ def bio_delete(ctx, template_id, pin, force):
     enrollments = bio.enumerate_enrollments()
 
     try:
-        key = bytes.fromhex(template_id)
+        key: Optional[bytes] = bytes.fromhex(template_id)
     except ValueError:
         key = None
 

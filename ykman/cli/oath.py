@@ -179,7 +179,10 @@ def access():
 @click.pass_context
 @click_password_option
 @click.option(
-    "-c", "--clear", is_flag=True, help="Clear the current password.",
+    "-c",
+    "--clear",
+    is_flag=True,
+    help="Clear the current password.",
 )
 @click.option("-n", "--new-password", help="Provide a new password as an argument.")
 def change(ctx, password, clear, new_password):
@@ -286,7 +289,10 @@ def forget(ctx):
 
 
 click_remember_option = click.option(
-    "-r", "--remember", is_flag=True, help="Remember the password on this machine.",
+    "-r",
+    "--remember",
+    is_flag=True,
+    help="Remember the password on this machine.",
 )
 
 click_touch_option = click.option(
@@ -365,9 +371,9 @@ def accounts():
     default=0,
     help="Initial counter value for HOTP accounts.",
 )
-@click.option("-i", "--issuer", help="Issuer of the account.")
+@click.option("-i", "--issuer", help="Issuer of the account (optional).")
 @click.option(
-    "-p",
+    "-P",
     "--period",
     help="Number of seconds a TOTP code is valid.",
     default=30,
@@ -397,6 +403,10 @@ def add(
     Add a new account.
 
     This will add a new OATH account to the YubiKey.
+
+    \b
+    NAME    Human readable name of the account, such as a username or e-mail address.
+    SECRET  Base32-encoded secret/key value provided by the server.
     """
 
     digits = int(digits)
@@ -446,7 +456,7 @@ def uri(ctx, data, touch, force, password, remember):
 
     if not data:
         while True:
-            uri = click_prompt("Enter an OATH URI")
+            uri = click_prompt("Enter an OATH URI (otpauth://)")
             try:
                 data = CredentialData.parse_uri(uri)
                 break
@@ -518,7 +528,7 @@ def _add_cred(ctx, data, touch, force):
 @click_show_hidden_option
 @click.pass_context
 @click.option("-o", "--oath-type", is_flag=True, help="Display the OATH type.")
-@click.option("-p", "--period", is_flag=True, help="Display the period.")
+@click.option("-P", "--period", is_flag=True, help="Display the period.")
 @click_password_option
 @click_remember_option
 def list(ctx, show_hidden, oath_type, period, password, remember):
@@ -611,10 +621,10 @@ def code(ctx, show_hidden, query, single, password, remember):
                 code = "[Requires Touch]"
             elif cred.oath_type == OATH_TYPE.HOTP:
                 code = "[HOTP Account]"
+            elif is_steam(cred):
+                code = calculate_steam(session, cred)
             else:
                 code = ""
-            if is_steam(cred):
-                code = calculate_steam(session, cred)
             outputs.append((_string_id(cred), code))
 
         longest_name = max(len(n) for (n, c) in outputs) if outputs else 0
@@ -637,8 +647,8 @@ def rename(ctx, query, name, force, password, remember):
     Rename an account (Requires YubiKey 5.3 or later).
 
     \b
-    QUERY       A query to match a single account (as shown in "list").
-    NAME        The name of the account (use "<issuer>:<name>" to specify issuer).
+    QUERY  A query to match a single account (as shown in "list").
+    NAME   The name of the account (use "<issuer>:<name>" to specify issuer).
     """
 
     _init_session(ctx, password, remember)
@@ -657,12 +667,14 @@ def rename(ctx, query, name, force, password, remember):
         new_id = _format_cred_id(issuer, name, cred.oath_type, cred.period)
         if any(cred.id == new_id for cred in creds):
             cli_fail(
-                "Another account with ID {new_id.decode()} "
+                f"Another account with ID {new_id.decode()} "
                 "already exists on this YubiKey."
             )
         if force or (
             click.confirm(
-                f"Rename account: {_string_id(cred)} ?", default=False, err=True,
+                f"Rename account: {_string_id(cred)} ?",
+                default=False,
+                err=True,
             )
         ):
             session.rename_credential(cred.id, name, issuer)
@@ -685,7 +697,9 @@ def delete(ctx, query, force, password, remember):
     Delete an account.
 
     Delete an account from the YubiKey.
-    Provide a query string to match the account to delete.
+
+    \b
+    QUERY  A query to match a single account (as shown in "list").
     """
 
     _init_session(ctx, password, remember)
@@ -698,7 +712,9 @@ def delete(ctx, query, force, password, remember):
         cred = hits[0]
         if force or (
             click.confirm(
-                f"Delete account: {_string_id(cred)} ?", default=False, err=True,
+                f"Delete account: {_string_id(cred)} ?",
+                default=False,
+                err=True,
             )
         ):
             session.delete_credential(cred.id)

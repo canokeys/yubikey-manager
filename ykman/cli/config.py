@@ -51,11 +51,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-CLEAR_LOCK_CODE = "0" * 32
+CLEAR_LOCK_CODE = b"\0" * 16
 
 
-def prompt_lock_code(prompt="Enter your lock code"):
-    return click_prompt(prompt, default="", hide_input=True, show_default=False)
+def prompt_lock_code():
+    return click_prompt("Enter your lock code", hide_input=True)
 
 
 @click.group()
@@ -124,72 +124,51 @@ def set_lock_code(ctx, lock_code, new_lock_code, clear, generate, force):
     info = ctx.obj["info"]
     app = ctx.obj["controller"]
 
-    def prompt_new_lock_code():
-        return prompt_lock_code(prompt="Enter your new lock code")
+    if sum(1 for arg in [new_lock_code, generate, clear] if arg) > 1:
+        cli_fail(
+            "Invalid options: Only one of --new-lock-code, --generate, "
+            "and --clear may be used."
+        )
 
-    def prompt_current_lock_code():
-        return prompt_lock_code(prompt="Enter your current lock code")
-
-    def change_lock_code(lock_code, new_lock_code):
-        lock_code = _parse_lock_code(ctx, lock_code)
-        new_lock_code = _parse_lock_code(ctx, new_lock_code)
-        try:
-            app.write_device_config(
-                None, False, lock_code, new_lock_code,
-            )
-        except Exception as e:
-            logger.error("Changing the lock code failed", exc_info=e)
-            cli_fail("Failed to change the lock code. Wrong current code?")
-
-    def set_lock_code(new_lock_code):
-        new_lock_code = _parse_lock_code(ctx, new_lock_code)
-        try:
-            app.write_device_config(
-                None, False, None, new_lock_code,
-            )
-        except Exception as e:
-            logger.error("Setting the lock code failed", exc_info=e)
-            cli_fail("Failed to set the lock code.")
-
-    if generate and new_lock_code:
-        ctx.fail("Invalid options: --new-lock-code conflicts with --generate.")
-
+    # Get the new lock code to set
     if clear:
-        new_lock_code = CLEAR_LOCK_CODE
-
-    if generate:
-        new_lock_code = os.urandom(16).hex()
-        click.echo(f"Using a randomly generated lock code: {new_lock_code}")
+        set_code = CLEAR_LOCK_CODE
+    elif generate:
+        set_code = os.urandom(16)
+        click.echo(f"Using a randomly generated lock code: {set_code.hex()}")
         force or click.confirm(
             "Lock configuration with this lock code?", abort=True, err=True
         )
+    else:
+        if not new_lock_code:
+            new_lock_code = click_prompt(
+                "Enter your new lock code", hide_input=True, confirmation_prompt=True
+            )
+        set_code = _parse_lock_code(ctx, new_lock_code)
 
+    # Get the current lock code to use
     if info.is_locked:
-        if lock_code:
-            if new_lock_code:
-                change_lock_code(lock_code, new_lock_code)
-            else:
-                new_lock_code = prompt_new_lock_code()
-                change_lock_code(lock_code, new_lock_code)
-        else:
-            if new_lock_code:
-                lock_code = prompt_current_lock_code()
-                change_lock_code(lock_code, new_lock_code)
-            else:
-                lock_code = prompt_current_lock_code()
-                new_lock_code = prompt_new_lock_code()
-                change_lock_code(lock_code, new_lock_code)
+        if not lock_code:
+            lock_code = click_prompt("Enter your current lock code", hide_input=True)
+        use_code = _parse_lock_code(ctx, lock_code)
     else:
         if lock_code:
-            cli_fail(
-                "There is no current lock code set. Use --new-lock-code to set one."
-            )
-        else:
-            if new_lock_code:
-                set_lock_code(new_lock_code)
-            else:
-                new_lock_code = prompt_new_lock_code()
-                set_lock_code(new_lock_code)
+            cli_fail("No lock code is currently set. Use --new-lock-code to set one.")
+        use_code = None
+
+    # Set new lock code
+    try:
+        app.write_device_config(
+            None,
+            False,
+            use_code,
+            set_code,
+        )
+    except Exception as e:
+        logger.error("Setting the lock code failed", exc_info=e)
+        if info.is_locked:
+            cli_fail("Failed to change the lock code. Wrong current code?")
+        cli_fail("Failed to set the lock code.")
 
 
 @config.command()
@@ -199,14 +178,14 @@ def set_lock_code(ctx, lock_code, new_lock_code, clear, generate, force):
     "-e",
     "--enable",
     multiple=True,
-    type=EnumChoice(CAPABILITY, hidden=[CAPABILITY.HSMAUTH]),
+    type=EnumChoice(CAPABILITY),
     help="Enable applications.",
 )
 @click.option(
     "-d",
     "--disable",
     multiple=True,
-    type=EnumChoice(CAPABILITY, hidden=[CAPABILITY.HSMAUTH]),
+    type=EnumChoice(CAPABILITY),
     help="Disable applications.",
 )
 @click.option(
@@ -283,6 +262,7 @@ def usb(
     info = ctx.obj["info"]
     usb_supported = info.supported_capabilities[TRANSPORT.USB]
     usb_enabled = info.config.enabled_capabilities[TRANSPORT.USB]
+    usb_interfaces = USB_INTERFACE.for_capabilities(usb_enabled)
     flags = info.config.device_flags
 
     if enable_all:
@@ -317,6 +297,8 @@ def usb(
 
     ensure_not_all_disabled(ctx, usb_enabled)
 
+    reboot = usb_interfaces != USB_INTERFACE.for_capabilities(usb_enabled)
+
     f_confirm = ""
     if enable:
         f_confirm += f"Enable {', '.join(str(app) for app in enable)}.\n"
@@ -330,6 +312,8 @@ def usb(
         f_confirm += f"Set autoeject timeout to {autoeject_timeout}.\n"
     if chalresp_timeout:
         f_confirm += f"Set challenge-response timeout to {chalresp_timeout}.\n"
+    if reboot:
+        f_confirm += "This will cause the YubiKey to reboot.\n"
     f_confirm += "Configure USB?"
 
     is_locked = info.is_locked
@@ -356,7 +340,7 @@ def usb(
                 chalresp_timeout,
                 flags,
             ),
-            True,
+            reboot,
             lock_code,
         )
     except Exception as e:
@@ -371,14 +355,14 @@ def usb(
     "-e",
     "--enable",
     multiple=True,
-    type=EnumChoice(CAPABILITY, hidden=[CAPABILITY.HSMAUTH]),
+    type=EnumChoice(CAPABILITY),
     help="Enable applications.",
 )
 @click.option(
     "-d",
     "--disable",
     multiple=True,
-    type=EnumChoice(CAPABILITY, hidden=[CAPABILITY.HSMAUTH]),
+    type=EnumChoice(CAPABILITY),
     help="Disable applications.",
 )
 @click.option("-a", "--enable-all", is_flag=True, help="Enable all applications.")
@@ -506,12 +490,10 @@ def _parse_mode_string(ctx, param, mode):
         pass  # Not a numeric mode, parse string
 
     try:
-        interfaces = USB_INTERFACE(0)
         if mode[0] in ["+", "-"]:
             info = ctx.obj["info"]
             usb_enabled = info.config.enabled_capabilities[TRANSPORT.USB]
-            my_mode = _mode_from_usb_enabled(usb_enabled)
-            interfaces |= my_mode.interfaces
+            interfaces = USB_INTERFACE.for_capabilities(usb_enabled)
             for mod in re.findall(r"[+-][A-Z]+", mode.upper()):
                 interface = _parse_interface_string(mod[1:])
                 if mod.startswith("+"):
@@ -519,22 +501,13 @@ def _parse_mode_string(ctx, param, mode):
                 else:
                     interfaces ^= interface
         else:
-            for t in filter(None, re.split(r"[+]+", mode.upper())):
-                interfaces |= _parse_interface_string(t)
+            interfaces = USB_INTERFACE(0)
+            for t in re.split(r"[+]+", mode.upper()):
+                if t:
+                    interfaces |= _parse_interface_string(t)
     except ValueError:
         ctx.fail(f"Invalid mode string: {mode}")
 
-    return Mode(interfaces)
-
-
-def _mode_from_usb_enabled(usb_enabled):
-    interfaces = USB_INTERFACE(0)
-    if CAPABILITY.OTP & usb_enabled:
-        interfaces |= USB_INTERFACE.OTP
-    if (CAPABILITY.U2F | CAPABILITY.FIDO2) & usb_enabled:
-        interfaces |= USB_INTERFACE.FIDO
-    if (CAPABILITY.OPENPGP | CAPABILITY.PIV | CAPABILITY.OATH) & usb_enabled:
-        interfaces |= USB_INTERFACE.CCID
     return Mode(interfaces)
 
 
@@ -591,18 +564,18 @@ def mode(ctx, mode, touch_eject, autoeject_timeout, chalresp_timeout, force):
     info = ctx.obj["info"]
     mgmt = ctx.obj["controller"]
     usb_enabled = info.config.enabled_capabilities[TRANSPORT.USB]
-    my_mode = _mode_from_usb_enabled(usb_enabled)
+    my_mode = Mode(USB_INTERFACE.for_capabilities(usb_enabled))
     usb_supported = info.supported_capabilities[TRANSPORT.USB]
-    interfaces_supported = _mode_from_usb_enabled(usb_supported).interfaces
+    interfaces_supported = USB_INTERFACE.for_capabilities(usb_supported)
     pid = ctx.obj["pid"]
     if pid:
         key_type = pid.get_type()
     else:
         key_type = None
 
-    if autoeject_timeout:
+    if autoeject_timeout:  # autoeject implies touch eject
         touch_eject = True
-    autoeject = autoeject_timeout if touch_eject else 0
+    autoeject = autoeject_timeout if touch_eject else None
 
     if mode.interfaces != USB_INTERFACE.CCID:
         if touch_eject:

@@ -55,7 +55,7 @@ from cryptography.hazmat.backends import default_backend
 
 from dataclasses import dataclass
 from enum import Enum, IntEnum, unique
-from typing import Optional, Union, cast
+from typing import Optional, Union, Type, cast
 
 import logging
 import os
@@ -73,7 +73,7 @@ class ALGORITHM(str, Enum):
 
 # Don't treat pre 1.0 versions as "developer builds".
 def require_version(my_version: Version, *args, **kwargs):
-    if my_version <= (0, 1, 3):  # Last pre 1.0 release of ykneo-piv
+    if my_version <= (0, 1, 4):  # Last pre 1.0 release of ykneo-piv
         my_version = Version(1, 0, 0)
     _require_version(my_version, *args, **kwargs)
 
@@ -424,7 +424,7 @@ def _parse_device_public_key(key_type, encoded):
         return rsa.RSAPublicNumbers(exponent, modulus).public_key(default_backend())
     else:
         if key_type == KEY_TYPE.ECCP256:
-            curve = ec.SECP256R1
+            curve: Type[ec.EllipticCurve] = ec.SECP256R1
         else:
             curve = ec.SECP384R1
 
@@ -647,7 +647,11 @@ class PivSession:
             return Tlv.unpack(
                 expected,
                 self.protocol.send_apdu(
-                    0, INS_GET_DATA, 0x3F, 0xFF, Tlv(TAG_OBJ_ID, int2bytes(object_id)),
+                    0,
+                    INS_GET_DATA,
+                    0x3F,
+                    0xFF,
+                    Tlv(TAG_OBJ_ID, int2bytes(object_id)),
                 ),
             )
         except ValueError as e:
@@ -790,7 +794,13 @@ class PivSession:
                     ),
                 ),
             )
-            return Tlv.unpack(TAG_AUTH_RESPONSE, Tlv.unpack(TAG_DYN_AUTH, response,),)
+            return Tlv.unpack(
+                TAG_AUTH_RESPONSE,
+                Tlv.unpack(
+                    TAG_DYN_AUTH,
+                    response,
+                ),
+            )
         except ApduError as e:
             if e.sw == SW.INCORRECT_PARAMETERS:
                 raise e  # TODO: Different error, No key?

@@ -249,6 +249,7 @@ class OathSession:
         self._version, self._salt, self._challenge = _parse_select(
             self.protocol.select(AID.OATH)
         )
+        self._has_key = self._challenge is not None
         self._device_id = _get_device_id(self._salt)
         self.protocol.enable_touch_workaround(self._version)
 
@@ -261,12 +262,17 @@ class OathSession:
         return self._device_id
 
     @property
+    def has_key(self) -> bool:
+        return self._has_key
+
+    @property
     def locked(self) -> bool:
         return self._challenge is not None
 
     def reset(self) -> None:
         self.protocol.send_apdu(0, INS_RESET, 0xDE, 0xAD)
         _, self._salt, self._challenge = _parse_select(self.protocol.select(AID.OATH))
+        self._has_key = False
         self._device_id = _get_device_id(self._salt)
 
     def derive_key(self, password: str) -> bytes:
@@ -298,9 +304,11 @@ class OathSession:
                 + Tlv(TAG_RESPONSE, response)
             ),
         )
+        self._has_key = True
 
     def unset_key(self) -> None:
         self.protocol.send_apdu(0, INS_SET_CODE, 0, 0, Tlv(TAG_KEY))
+        self._has_key = False
 
     def put_credential(
         self, credential_data: CredentialData, touch_required: bool = False
@@ -397,12 +405,12 @@ class OathSession:
             )
 
             code = None  # Will be None for HOTP and touch
-            if oath_type == OATH_TYPE.TOTP:
-                if period != DEFAULT_PERIOD:
+            if resp_tag == TAG_TRUNCATED:  # Only TOTP, no-touch here
+                if period == DEFAULT_PERIOD:
+                    code = _format_code(credential, timestamp, tlv.value)
+                else:
                     # Non-standard period, recalculate
                     code = self.calculate_code(credential, timestamp)
-                elif resp_tag == TAG_TRUNCATED:
-                    code = _format_code(credential, timestamp, tlv.value)
             entries[credential] = code
 
         return entries

@@ -52,7 +52,7 @@ import logging
 import struct
 import os
 
-from typing import Union, Mapping, Optional, List
+from typing import Union, Mapping, Optional, List, Type, cast
 
 
 logger = logging.getLogger(__name__)
@@ -162,50 +162,50 @@ def generate_random_management_key(algorithm: MANAGEMENT_KEY_TYPE) -> bytes:
 
 
 class PivmanData:
-    def __init__(self, raw_data=Tlv(0x80)):
+    def __init__(self, raw_data: bytes = Tlv(0x80)):
         data = Tlv.parse_dict(Tlv(raw_data).value)
         self._flags = struct.unpack(">B", data[0x81])[0] if 0x81 in data else None
         self.salt = data.get(0x82)
         self.pin_timestamp = struct.unpack(">I", data[0x83]) if 0x83 in data else None
 
-    def _get_flag(self, mask):
+    def _get_flag(self, mask: int) -> bool:
         return bool((self._flags or 0) & mask)
 
-    def _set_flag(self, mask, value):
+    def _set_flag(self, mask: int, value: bool) -> None:
         if value:
             self._flags = (self._flags or 0) | mask
         elif self._flags is not None:
             self._flags &= ~mask
 
     @property
-    def puk_blocked(self):
+    def puk_blocked(self) -> bool:
         return self._get_flag(0x01)
 
     @puk_blocked.setter
-    def puk_blocked(self, value):
+    def puk_blocked(self, value: bool) -> None:
         self._set_flag(0x01, value)
 
     @property
-    def mgm_key_protected(self):
+    def mgm_key_protected(self) -> bool:
         return self._get_flag(0x02)
 
     @mgm_key_protected.setter
-    def mgm_key_protected(self, value):
+    def mgm_key_protected(self, value: bool) -> None:
         self._set_flag(0x02, value)
 
     @property
-    def has_protected_key(self):
+    def has_protected_key(self) -> bool:
         return self.has_derived_key or self.has_stored_key
 
     @property
-    def has_derived_key(self):
+    def has_derived_key(self) -> bool:
         return self.salt is not None
 
     @property
-    def has_stored_key(self):
+    def has_stored_key(self) -> bool:
         return self.mgm_key_protected
 
-    def get_bytes(self):
+    def get_bytes(self) -> bytes:
         data = b""
         if self._flags is not None:
             data += Tlv(0x81, struct.pack(">B", self._flags))
@@ -217,11 +217,11 @@ class PivmanData:
 
 
 class PivmanProtectedData:
-    def __init__(self, raw_data=Tlv(0x88)):
+    def __init__(self, raw_data: bytes = Tlv(0x88)):
         data = Tlv.parse_dict(Tlv(raw_data).value)
         self.key = data.get(0x89)
 
-    def get_bytes(self):
+    def get_bytes(self) -> bytes:
         data = b""
         if self.key is not None:
             data += Tlv(0x89, self.key)
@@ -253,7 +253,13 @@ def get_pivman_protected_data(session: PivSession) -> PivmanProtectedData:
         raise
 
 
-def pivman_set_mgm_key(session, new_key, algorithm, touch=False, store_on_device=False):
+def pivman_set_mgm_key(
+    session: PivSession,
+    new_key: bytes,
+    algorithm: MANAGEMENT_KEY_TYPE,
+    touch: bool = False,
+    store_on_device: bool = False,
+) -> None:
     """Set a new management key, while keeping PivmanData in sync."""
     pivman = get_pivman_data(session)
 
@@ -267,7 +273,7 @@ def pivman_set_mgm_key(session, new_key, algorithm, touch=False, store_on_device
                 raise
 
     # Set the new management key
-    session.set_management_key(algorithm, new_key)
+    session.set_management_key(algorithm, new_key, touch)
 
     if pivman.has_derived_key:
         # Clear salt for old derived keys.
@@ -287,22 +293,24 @@ def pivman_set_mgm_key(session, new_key, algorithm, touch=False, store_on_device
         try:
             pivman_prot.key = None
             session.put_object(
-                OBJECT_ID_PIVMAN_PROTECTED_DATA, pivman_prot.get_bytes(),
+                OBJECT_ID_PIVMAN_PROTECTED_DATA,
+                pivman_prot.get_bytes(),
             )
         except ApduError as e:
-            logger.debug("No PIN provided, can't clear key..", exc_info=e)
+            logger.debug("No PIN provided, can't clear key...", exc_info=e)
 
 
-def pivman_change_pin(session, old_pin, new_pin):
+def pivman_change_pin(session: PivSession, old_pin: str, new_pin: str) -> None:
     """Change the PIN, while keeping PivmanData in sync."""
     session.change_pin(old_pin, new_pin)
 
     pivman = get_pivman_data(session)
     if pivman.has_derived_key:
         session.authenticate(
-            MANAGEMENT_KEY_TYPE.TDES, derive_management_key(old_pin, pivman.salt)
+            MANAGEMENT_KEY_TYPE.TDES,
+            derive_management_key(old_pin, cast(bytes, pivman.salt)),
         )
-        session.verify(new_pin)
+        session.verify_pin(new_pin)
         new_salt = os.urandom(16)
         new_key = derive_management_key(new_pin, new_salt)
         session.set_management_key(MANAGEMENT_KEY_TYPE.TDES, new_key)
@@ -350,7 +358,10 @@ def check_key(
 
         if isinstance(public_key, rsa.RSAPublicKey):
             public_key.verify(
-                test_sig, test_data, padding.PKCS1v15(), hashes.SHA256(),
+                test_sig,
+                test_data,
+                padding.PKCS1v15(),
+                hashes.SHA256(),
             )
         elif isinstance(public_key, ec.EllipticCurvePublicKey):
             public_key.verify(test_sig, test_data, ec.ECDSA(hashes.SHA256()))
@@ -518,16 +529,17 @@ def sign_certificate_builder(
     slot: SLOT,
     key_type: KEY_TYPE,
     builder: x509.CertificateBuilder,
+    hash_algorithm: Type[hashes.HashAlgorithm] = hashes.SHA256,
 ) -> x509.Certificate:
     """Sign a Certificate."""
     dummy_key = _dummy_key(key_type)
-    cert = builder.sign(dummy_key, hashes.SHA256(), default_backend())
+    cert = builder.sign(dummy_key, hash_algorithm(), default_backend())
 
     sig = session.sign(
         slot,
         key_type,
         cert.tbs_certificate_bytes,
-        hashes.SHA256(),
+        hash_algorithm(),
         padding.PKCS1v15(),  # Only used for RSA
     )
 
@@ -545,11 +557,12 @@ def sign_csr_builder(
     slot: SLOT,
     public_key: Union[rsa.RSAPublicKey, ec.EllipticCurvePublicKey],
     builder: x509.CertificateSigningRequestBuilder,
+    hash_algorithm: Type[hashes.HashAlgorithm] = hashes.SHA256,
 ) -> x509.CertificateSigningRequest:
     """Sign a CSR."""
     key_type = KEY_TYPE.from_public_key(public_key)
     dummy_key = _dummy_key(key_type)
-    csr = builder.sign(dummy_key, hashes.SHA256(), default_backend())
+    csr = builder.sign(dummy_key, hash_algorithm(), default_backend())
     seq = Tlv.parse_list(Tlv.unpack(0x30, csr.public_bytes(Encoding.DER)))
 
     # Replace public key
@@ -566,7 +579,7 @@ def sign_csr_builder(
         slot,
         key_type,
         seq[0],
-        hashes.SHA256(),
+        hash_algorithm(),
         padding.PKCS1v15(),  # Only used for RSA
     )
 
@@ -585,6 +598,7 @@ def generate_self_signed_certificate(
     subject_str: str,
     valid_from: datetime,
     valid_to: datetime,
+    hash_algorithm: Type[hashes.HashAlgorithm] = hashes.SHA256,
 ) -> x509.Certificate:
     """Generate a self-signed certificate using a private key in a slot."""
     key_type = KEY_TYPE.from_public_key(public_key)
@@ -601,7 +615,9 @@ def generate_self_signed_certificate(
     )
 
     try:
-        return sign_certificate_builder(session, slot, key_type, builder)
+        return sign_certificate_builder(
+            session, slot, key_type, builder, hash_algorithm
+        )
     except ApduError as e:
         logger.error("Failed to generate certificate for slot %s", slot, exc_info=e)
         raise
@@ -612,6 +628,7 @@ def generate_csr(
     slot: SLOT,
     public_key: Union[rsa.RSAPublicKey, ec.EllipticCurvePublicKey],
     subject_str: str,
+    hash_algorithm: Type[hashes.HashAlgorithm] = hashes.SHA256,
 ) -> x509.CertificateSigningRequest:
     """Generate a CSR using a private key in a slot."""
     builder = x509.CertificateSigningRequestBuilder().subject_name(
@@ -619,7 +636,7 @@ def generate_csr(
     )
 
     try:
-        return sign_csr_builder(session, slot, public_key, builder)
+        return sign_csr_builder(session, slot, public_key, builder, hash_algorithm)
     except ApduError as e:
         logger.error(
             "Failed to generate Certificate Signing Request for slot %s",

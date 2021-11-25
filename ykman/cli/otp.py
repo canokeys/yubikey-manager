@@ -25,6 +25,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from base64 import b32encode
 from yubikit.yubiotp import (
     SLOT,
     YubiOtpSession,
@@ -104,7 +105,7 @@ def _failed_to_write_msg(ctx, exc_info):
     logger.error("Failed to write to device", exc_info=exc_info)
     cli_fail(
         "Failed to write to the YubiKey. Make sure the device does not "
-        "have restricted access."
+        'have restricted access (see "ykman otp --help" for more info).'
     )
 
 
@@ -124,7 +125,7 @@ def _confirm_slot_overwrite(slot_state, slot):
     "--access-code",
     required=False,
     metavar="HEX",
-    help="A 6 byte access code. Set to empty to use a prompt for input.",
+    help='A 6 byte access code. Use "-" as a value to prompt for input.',
 )
 def otp(ctx, access_code):
     """
@@ -136,7 +137,9 @@ def otp(ctx, access_code):
     A slot configuration may be write-protected with an access code. This
     prevents the configuration to be overwritten without the access code
     provided. Mode switching the YubiKey is not possible when a slot is
-    configured with an access code.
+    configured with an access code. To provide an access code to commands
+    which require it, use the --access-code option. Note that this option must
+    be given directly after the "otp" command, before any sub-command.
 
     Examples:
 
@@ -155,12 +158,16 @@ def otp(ctx, access_code):
     \b
       Program a random 38 characters long static password to slot 2:
       $ ykman otp static --generate 2 --length 38
+
+    \b
+      Remove a currently set access code from slot 2):
+      $ ykman otp --access-code 0123456789ab settings 2 --delete-access-code
     """
 
     ctx.obj["session"] = YubiOtpSession(ctx.obj["conn"])
     if access_code is not None:
-        if access_code == "":
-            access_code = click_prompt("Enter the access code", show_default=False)
+        if access_code == "-":
+            access_code = click_prompt("Enter the access code", hide_input=True)
 
         try:
             access_code = parse_access_code_hex(access_code)
@@ -348,8 +355,9 @@ def yubiotp(
 
     if not public_id:
         if serial_public_id:
-            serial = session.get_serial()
-            if serial is None:
+            try:
+                serial = session.get_serial()
+            except CommandError:
                 cli_fail("Serial number not set, public ID must be provided")
             public_id = modhex_encode(b"\xff\x00" + struct.pack(b">I", serial))
             click.echo(f"Using YubiKey serial as public ID: {public_id}")
@@ -541,6 +549,13 @@ def chalresp(ctx, slot, key, totp, touch, force, generate):
                 "No secret key given. Please remove the --force flag, "
                 "set the KEY argument or set the --generate flag."
             )
+        elif generate:
+            key = os.urandom(20)
+            if totp:
+                b32key = b32encode(key).decode()
+                click.echo(f"Using a randomly generated key (Base32): {b32key}")
+            else:
+                click.echo(f"Using a randomly generated key: {key.hex()}")
         elif totp:
             while True:
                 key = click_prompt("Enter a secret key (base32)")
@@ -550,16 +565,14 @@ def chalresp(ctx, slot, key, totp, touch, force, generate):
                 except Exception as e:
                     click.echo(e)
         else:
-            if generate:
-                key = os.urandom(20)
-                click.echo(f"Using a randomly generated key: {key.hex()}")
-            else:
-                key = click_prompt("Enter a secret key")
-                key = parse_oath_key(key)
+            key = click_prompt("Enter a secret key")
+            key = parse_oath_key(key)
 
     cred_type = "TOTP" if totp else "challenge-response"
     force or click.confirm(
-        f"Program a {cred_type} credential in slot {slot}?", abort=True, err=True,
+        f"Program a {cred_type} credential in slot {slot}?",
+        abort=True,
+        err=True,
     )
     try:
         session.put_configuration(
@@ -607,7 +620,7 @@ def calculate(ctx, slot, challenge, totp, digits):
 
     if totp:  # Challenge omitted or timestamp
         if challenge is None:
-            challenge = time_challenge(time())
+            challenge = time_challenge(int(time()))
         else:
             try:
                 challenge = time_challenge(int(challenge))
@@ -623,7 +636,7 @@ def calculate(ctx, slot, challenge, totp, digits):
         def on_keepalive(status):
             if not hasattr(on_keepalive, "prompted") and status == 2:
                 prompt_for_touch()
-                on_keepalive.prompted = True
+                setattr(on_keepalive, "prompted", True)
 
         response = session.calculate_hmac_sha1(slot, challenge, event, on_keepalive)
         if totp:
@@ -694,8 +707,8 @@ def hotp(ctx, slot, key, digits, counter, no_enter, force):
     "--new-access-code",
     metavar="HEX",
     required=False,
-    help="Set a new 6 byte access code for the slot. Set to empty to use a "
-    "prompt for input.",
+    help='Set a new 6 byte access code for the slot. Use "-" as a value to prompt for '
+    "input.",
 )
 @click.option(
     "--delete-access-code", is_flag=True, help="Remove access code from the slot."
@@ -739,8 +752,14 @@ def settings(
     """
     session = ctx.obj["session"]
 
-    if (new_access_code is not None) and delete_access_code:
+    if new_access_code and delete_access_code:
         ctx.fail("--new-access-code conflicts with --delete-access-code.")
+
+    if delete_access_code and not ctx.obj["access_code"]:
+        cli_fail(
+            "--delete-access-code used without providing an access code "
+            '(see "ykman otp --help" for more info).'
+        )
 
     if not session.get_config_state().is_configured(slot):
         cli_fail("Not possible to update settings on an empty slot.")
@@ -749,8 +768,10 @@ def settings(
         if not delete_access_code:
             new_access_code = ctx.obj["access_code"]
     else:
-        if new_access_code == "":
-            new_access_code = click_prompt("Enter new access code", show_default=False)
+        if new_access_code == "-":
+            new_access_code = click_prompt(
+                "Enter new access code", hide_input=True, confirmation_prompt=True
+            )
 
         try:
             new_access_code = parse_access_code_hex(new_access_code)

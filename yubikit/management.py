@@ -56,15 +56,6 @@ import struct
 
 
 @unique
-class USB_INTERFACE(IntFlag):
-    """YubiKey USB interface identifiers."""
-
-    OTP = 0x01
-    FIDO = 0x02
-    CCID = 0x04
-
-
-@unique
 class CAPABILITY(IntFlag):
     """YubiKey Application identifiers."""
 
@@ -85,6 +76,37 @@ class CAPABILITY(IntFlag):
             return "YubiHSM Auth"
         else:
             return getattr(self, "name", super().__str__())
+
+
+@unique
+class USB_INTERFACE(IntFlag):
+    """YubiKey USB interface identifiers."""
+
+    OTP = 0x01
+    FIDO = 0x02
+    CCID = 0x04
+
+    def supports_connection(self, connection_type) -> bool:
+        if issubclass(connection_type, SmartCardConnection):
+            return USB_INTERFACE.CCID in self
+        if issubclass(connection_type, FidoConnection):
+            return USB_INTERFACE.FIDO in self
+        if issubclass(connection_type, OtpConnection):
+            return USB_INTERFACE.OTP in self
+        return False
+
+    @staticmethod
+    def for_capabilities(capabilities: CAPABILITY) -> "USB_INTERFACE":
+        ifaces = USB_INTERFACE(0)
+        if capabilities & CAPABILITY.OTP:
+            ifaces |= USB_INTERFACE.OTP
+        if capabilities & (CAPABILITY.U2F | CAPABILITY.FIDO2):
+            ifaces |= USB_INTERFACE.FIDO
+        if capabilities & (
+            CAPABILITY.OATH | CAPABILITY.PIV | CAPABILITY.OPENPGP | CAPABILITY.HSMAUTH
+        ):
+            ifaces |= USB_INTERFACE.CCID
+        return ifaces
 
 
 @unique
@@ -200,6 +222,7 @@ class DeviceInfo:
     supported_capabilities: Mapping[TRANSPORT, CAPABILITY]
     is_locked: bool
     is_fips: bool = False
+    is_sky: bool = False
 
     def has_transport(self, transport: TRANSPORT) -> bool:
         return transport in self.supported_capabilities
@@ -214,6 +237,7 @@ class DeviceInfo:
         ff_value = bytes2int(data.get(TAG_FORM_FACTOR, b"\0"))
         form_factor = FORM_FACTOR.from_code(ff_value)
         fips = bool(ff_value & 0x80)
+        sky = bool(ff_value & 0x40)
         if TAG_VERSION in data:
             version = Version.from_bytes(data[TAG_VERSION])
         else:
@@ -244,6 +268,7 @@ class DeviceInfo:
             supported,
             locked,
             fips,
+            sky,
         )
 
 
@@ -346,9 +371,18 @@ P1_DEVICE_CONFIG = 0x11
 class _ManagementSmartCardBackend(_Backend):
     def __init__(self, smartcard_connection):
         self.protocol = SmartCardProtocol(smartcard_connection)
-        select_str = self.protocol.select(AID.MANAGEMENT).decode()
+        select_bytes = self.protocol.select(AID.MANAGEMENT)
+        if select_bytes[-2:] == b"\x90\x00":
+            # YubiKey Edge incorrectly appends SW twice.
+            select_bytes = select_bytes[:-2]
+        select_str = select_bytes.decode()
         # self.version = Version.from_string(select_str)
         self.version = Version.from_string(self.protocol.send_apdu(0, ADMIN_INS_READ_VERSION, 0, 0).decode())
+        # For YubiKey NEO, we use the OTP application for further commands
+        if self.version[0] == 3:
+            # Workaround to "de-select" on NEO, otherwise it gets stuck.
+            self.protocol.connection.send_and_receive(b"\xa4\x04\x00\x08")
+            self.protocol.select(AID.OTP)
 
     def close(self):
         self.protocol.close()
@@ -438,7 +472,10 @@ class ManagementSession:
         )
 
     def set_mode(
-        self, mode: Mode, chalresp_timeout: int = 0, auto_eject_timeout: int = 0
+        self,
+        mode: Mode,
+        chalresp_timeout: int = 0,
+        auto_eject_timeout: Optional[int] = None,
     ) -> None:
         if self.version >= (5, 0, 0):
             # Translate into DeviceConfig
@@ -458,6 +495,13 @@ class ManagementSession:
                 )
             )
         else:
+            code = mode.code
+            if auto_eject_timeout is not None:
+                if mode.interfaces == USB_INTERFACE.CCID:
+                    code |= DEVICE_FLAG.EJECT
+                else:
+                    raise ValueError("Touch-eject only applicable for mode: CCID")
             self.backend.set_mode(
-                struct.pack(">BBH", mode.code, chalresp_timeout, auto_eject_timeout)
+                # N.B. This is little endian!
+                struct.pack("<BBH", code, chalresp_timeout, auto_eject_timeout or 0)
             )

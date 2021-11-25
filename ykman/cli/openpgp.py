@@ -207,10 +207,10 @@ def set_touch(ctx, key, policy, admin_pin, force):
     \b
     Off (default)   No touch required
     On              Touch required
-    Fixed           Touch required, can't be disabled without a full reset
+    Fixed           Touch required, can't be disabled without deleting the private key
     Cached          Touch required, cached for 15s after use
     Cached-Fixed    Touch required, cached for 15s after use, can't be disabled
-                    without a full reset
+                    without deleting the private key
     """
     controller = ctx.obj["controller"]
 
@@ -225,11 +225,15 @@ def set_touch(ctx, key, policy, admin_pin, force):
     if admin_pin is None:
         admin_pin = click_prompt("Enter Admin PIN", hide_input=True)
 
-    if force or click.confirm(
-        f"Set touch policy of {key.value.lower()} key to {policy_name}?",
-        abort=True,
-        err=True,
-    ):
+    prompt = f"Set touch policy of {key.value.lower()} key to {policy_name}?"
+    if policy.is_fixed:
+        prompt = (
+            "WARNING: This touch policy cannot be changed without deleting the "
+            + "corresponding key slot!\n"
+            + prompt
+        )
+
+    if force or click.confirm(prompt, abort=True, err=True):
         try:
             controller.verify_admin(admin_pin)
             controller.set_touch(key, policy)
@@ -278,7 +282,7 @@ def import_key(ctx, key, private_key, admin_pin):
 @click.pass_context
 @click.option("-P", "--pin", help="PIN code.")
 @click_format_option
-@click.argument("key", metavar="KEY", type=EnumChoice(KEY_SLOT))
+@click.argument("key", metavar="KEY", type=EnumChoice(KEY_SLOT, hidden=[KEY_SLOT.ATT]))
 @click.argument("certificate", type=click.File("wb"), metavar="CERTIFICATE")
 def attest(ctx, key, certificate, pin, format):
     """
@@ -295,7 +299,7 @@ def attest(ctx, key, certificate, pin, format):
     controller = ctx.obj["controller"]
 
     if not pin:
-        pin = click_prompt("Enter PIN", default="", hide_input=True, show_default=False)
+        pin = click_prompt("Enter PIN", hide_input=True)
 
     try:
         cert = controller.read_certificate(key)
@@ -339,6 +343,10 @@ def export_certificate(ctx, key, format, certificate):
     CERTIFICATE File to write certificate to. Use '-' to use stdout.
     """
     controller = ctx.obj["controller"]
+
+    if controller.version < (5, 2, 0) and key != KEY_SLOT.AUT:
+        cli_fail(f"Certificate slot {key.name} requires YubiKey 5.2.0 or later.")
+
     try:
         cert = controller.read_certificate(key)
     except ValueError:
@@ -358,6 +366,10 @@ def delete_certificate(ctx, key, admin_pin):
     KEY         Key slot to delete certificate from (sig, enc, aut, or att).
     """
     controller = ctx.obj["controller"]
+
+    if controller.version < (5, 2, 0) and key != KEY_SLOT.AUT:
+        cli_fail(f"Certificate slot {key.name} requires YubiKey 5.2.0 or later.")
+
     if admin_pin is None:
         admin_pin = click_prompt("Enter Admin PIN", hide_input=True)
     try:
@@ -382,6 +394,9 @@ def import_certificate(ctx, key, cert, admin_pin):
     CERTIFICATE File containing the certificate. Use '-' to use stdin.
     """
     controller = ctx.obj["controller"]
+
+    if controller.version < (5, 2, 0) and key != KEY_SLOT.AUT:
+        cli_fail(f"Certificate slot {key.name} requires YubiKey 5.2.0 or later.")
 
     if admin_pin is None:
         admin_pin = click_prompt("Enter Admin PIN", hide_input=True)

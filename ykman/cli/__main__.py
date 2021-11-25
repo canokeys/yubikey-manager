@@ -41,6 +41,7 @@ from ..device import (
     list_all_devices,
     scan_devices,
     connect_to_device,
+    ConnectionNotAvailableException,
 )
 from ..util import get_windows_version
 from ..diagnostics import get_diagnostics
@@ -81,23 +82,29 @@ WIN_CTAP_RESTRICTED = (
 )
 
 
+def _scan_changes(state, attempts=10):
+    for _ in range(attempts):
+        time.sleep(0.25)
+        devices, new_state = scan_devices()
+        if new_state != state:
+            return devices, new_state
+    raise TimeoutError("Timed out waiting for state change")
+
+
 def retrying_connect(serial, connections, attempts=10, state=None):
     while True:
         try:
             return connect_to_device(serial, connections)
+        except ConnectionNotAvailableException as e:
+            logger.error("Failed opening connection", exc_info=e)
+            raise  # No need to retry
         except Exception as e:
             logger.error("Failed opening connection", exc_info=e)
-            while attempts:
-                attempts -= 1
-                _, new_state = scan_devices()
-                if new_state != state:
-                    state = new_state
-                    logger.debug("State changed, re-try connect...")
-                    break
-                logger.debug("Sleep...")
-                time.sleep(0.5)
-            else:
-                raise
+            try:
+                _, state = _scan_changes(state)
+                logger.debug("State changed, re-try connect...")
+            except TimeoutError:
+                raise e
 
 
 def print_version(ctx, param, value):
@@ -148,11 +155,11 @@ def _run_cmd_for_single(ctx, cmd, connections, reader_name=None):
             if len(readers) == 1:
                 dev = readers[0]
                 try:
-                    if cmd == fido.name:
-                        conn = dev.open_connection(FidoConnection)
-                    else:
-                        conn = dev.open_connection(SmartCardConnection)
+                    conn = dev.open_connection(SmartCardConnection)
                     info = read_info(dev.pid, conn)
+                    if cmd == fido.name:
+                        conn.close()
+                        conn = dev.open_connection(FidoConnection)
                     return conn, dev, info
                 except Exception as e:
                     logger.error("Failure connecting to card", exc_info=e)
@@ -168,8 +175,12 @@ def _run_cmd_for_single(ctx, cmd, connections, reader_name=None):
     devices, state = scan_devices()
     n_devs = sum(devices.values())
 
-    if n_devs == 0:
-        cli_fail("No YubiKey detected!")
+    if n_devs == 0:  # The device might not yet be ready, wait a bit
+        try:
+            devices, state = _scan_changes(state)
+            n_devs = sum(devices.values())
+        except TimeoutError:
+            cli_fail("No YubiKey detected!")
     if n_devs > 1:
         cli_fail(
             "Multiple YubiKeys detected. Use --device SERIAL to specify "
@@ -180,7 +191,7 @@ def _run_cmd_for_single(ctx, cmd, connections, reader_name=None):
     pid = next(iter(devices.keys()))
     for c in connections:
         if USB_INTERFACE_MAPPING[c] & pid.get_interfaces():
-            if WIN_CTAP_RESTRICTED and c == FidoConnection:
+            if WIN_CTAP_RESTRICTED and connections == FidoConnection:
                 # FIDO-only command on Windows without Admin won't work.
                 cli_fail("FIDO access on Windows requires running as Administrator.")
             return retrying_connect(None, connections, state=state)
@@ -282,17 +293,15 @@ def cli(ctx, device, log_level, log_file, reader):
             cli_fail("FIDO access on Windows requires running as Administrator.")
 
         def resolve():
-            if not getattr(resolve, "items", None):
+            items = getattr(resolve, "items", None)
+            if not items:
                 if device is not None:
-                    resolve.items = _run_cmd_for_serial(
-                        subcmd.name, connections, device
-                    )
+                    items = _run_cmd_for_serial(subcmd.name, connections, device)
                 else:
-                    resolve.items = _run_cmd_for_single(
-                        ctx, subcmd.name, connections, reader
-                    )
-                ctx.call_on_close(resolve.items[0].close)
-            return resolve.items
+                    items = _run_cmd_for_single(ctx, subcmd.name, connections, reader)
+                ctx.call_on_close(items[0].close)
+                setattr(resolve, "items", items)
+            return items
 
         ctx.obj.add_resolver("conn", lambda: resolve()[0])
         ctx.obj.add_resolver("pid", lambda: resolve()[1].pid)
@@ -328,6 +337,8 @@ def list_keys(ctx, serials, readers):
             if dev_info.serial:
                 click.echo(dev_info.serial)
         else:
+            if dev.pid is None:  # Devices from list_all_devices should always have PID.
+                raise AssertionError("PID is None")
             name = get_name(dev_info, dev.pid.get_type())
             version = "%d.%d.%d" % dev_info.version if dev_info.version else "unknown"
             mode = dev.pid.name.split("_", 1)[1].replace("_", "+")

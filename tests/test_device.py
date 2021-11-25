@@ -1,16 +1,23 @@
 from ykman.device import get_name
 from ykman.base import YUBIKEY
 from yubikit.core import TRANSPORT
-from yubikit.management import CAPABILITY, FORM_FACTOR, DeviceInfo
+from yubikit.management import (
+    CAPABILITY,
+    FORM_FACTOR,
+    DeviceInfo,
+    DeviceConfig,
+    Version,
+)
+from typing import cast
 
 
 def info(form_factor):
     return DeviceInfo(
-        config=None,
+        config=cast(DeviceConfig, None),
         serial=None,
-        version=(5, 3, 0),
+        version=Version(5, 3, 0),
         form_factor=form_factor,
-        supported_capabilities={TRANSPORT.USB: 0xFF},
+        supported_capabilities={TRANSPORT.USB: 0xFF},  # type: ignore
         is_locked=False,
         is_fips=False,
     )
@@ -24,7 +31,7 @@ def info_nfc(form_factor):
 
 def test_yk5_formfactors():
     kt = YUBIKEY.YK4
-    assert get_name(info(FORM_FACTOR.USB_A_KEYCHAIN), kt) == "YubiKey 5 A"
+    assert get_name(info(FORM_FACTOR.USB_A_KEYCHAIN), kt) == "YubiKey 5A"
     assert get_name(info_nfc(FORM_FACTOR.USB_A_KEYCHAIN), kt) == "YubiKey 5 NFC"
     assert get_name(info(FORM_FACTOR.USB_A_NANO), kt) == "YubiKey 5 Nano"
     assert get_name(info(FORM_FACTOR.USB_C_KEYCHAIN), kt) == "YubiKey 5C"
@@ -51,11 +58,11 @@ def fido(device_info):
 def test_yk5_fido():
     kt = YUBIKEY.YK4
     assert (
-        get_name(fido(info(FORM_FACTOR.USB_A_BIO)), kt) == "YubiKey Bio (FIDO Edition)"
+        get_name(fido(info(FORM_FACTOR.USB_A_BIO)), kt) == "YubiKey Bio - FIDO Edition"
     )
     assert (
         get_name(fido(info(FORM_FACTOR.USB_C_BIO)), kt)
-        == "YubiKey C Bio (FIDO Edition)"
+        == "YubiKey C Bio - FIDO Edition"
     )
 
 
@@ -66,18 +73,19 @@ def fips(device_info):
 
 def test_yk5_fips_formfactors():
     kt = YUBIKEY.YK4
-    assert get_name(fips(info(FORM_FACTOR.USB_A_KEYCHAIN)), kt) == "YubiKey A FIPS"
+    assert get_name(fips(info(FORM_FACTOR.USB_A_KEYCHAIN)), kt) == "YubiKey 5A FIPS"
     assert (
-        get_name(fips(info_nfc(FORM_FACTOR.USB_A_KEYCHAIN)), kt) == "YubiKey NFC FIPS"
+        get_name(fips(info_nfc(FORM_FACTOR.USB_A_KEYCHAIN)), kt) == "YubiKey 5 NFC FIPS"
     )
-    assert get_name(fips(info(FORM_FACTOR.USB_A_NANO)), kt) == "YubiKey Nano FIPS"
-    assert get_name(fips(info(FORM_FACTOR.USB_C_KEYCHAIN)), kt) == "YubiKey C FIPS"
+    assert get_name(fips(info(FORM_FACTOR.USB_A_NANO)), kt) == "YubiKey 5 Nano FIPS"
+    assert get_name(fips(info(FORM_FACTOR.USB_C_KEYCHAIN)), kt) == "YubiKey 5C FIPS"
     assert (
-        get_name(fips(info_nfc(FORM_FACTOR.USB_C_KEYCHAIN)), kt) == "YubiKey C NFC FIPS"
+        get_name(fips(info_nfc(FORM_FACTOR.USB_C_KEYCHAIN)), kt)
+        == "YubiKey 5C NFC FIPS"
     )
-    assert get_name(fips(info(FORM_FACTOR.USB_C_NANO)), kt) == "YubiKey C Nano FIPS"
-    assert get_name(fips(info(FORM_FACTOR.USB_C_LIGHTNING)), kt) == "YubiKey Ci FIPS"
+    assert get_name(fips(info(FORM_FACTOR.USB_C_NANO)), kt) == "YubiKey 5C Nano FIPS"
+    assert get_name(fips(info(FORM_FACTOR.USB_C_LIGHTNING)), kt) == "YubiKey 5Ci FIPS"
     assert get_name(fips(info(FORM_FACTOR.USB_A_BIO)), kt) == "YubiKey Bio FIPS"
     assert get_name(fips(info(FORM_FACTOR.USB_C_BIO)), kt) == "YubiKey C Bio FIPS"
-    assert get_name(fips(info(FORM_FACTOR.UNKNOWN)), kt) == "YubiKey FIPS"
-    assert get_name(fips(info_nfc(FORM_FACTOR.UNKNOWN)), kt) == "YubiKey NFC FIPS"
+    assert get_name(fips(info(FORM_FACTOR.UNKNOWN)), kt) == "YubiKey 5 FIPS"
+    assert get_name(fips(info_nfc(FORM_FACTOR.UNKNOWN)), kt) == "YubiKey 5 NFC FIPS"

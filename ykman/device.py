@@ -46,10 +46,14 @@ from yubikit.management import (
     USB_INTERFACE,
     CAPABILITY,
     FORM_FACTOR,
+    DEVICE_FLAG,
 )
 from yubikit.yubiotp import YubiOtpSession
 from .base import PID, YUBIKEY, YkmanDevice
-from .hid import list_otp_devices, list_ctap_devices
+from .hid import (
+    list_otp_devices as _list_otp_devices,
+    list_ctap_devices as _list_ctap_devices,
+)
 from .pcsc import list_devices as _list_ccid_devices
 from smartcard.pcsc.PCSCExceptions import EstablishContextException
 from smartcard.Exceptions import NoCardException
@@ -64,26 +68,52 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-_pcsc_missing = False
+class ConnectionNotAvailableException(ValueError):
+    def __init__(self, connection_types):
+        super().__init__(
+            f"No eligiable connections are available ({connection_types})."
+        )
+        self.connection_types = connection_types
 
 
+def _warn_once(message, e_type=Exception):
+    warned: List[bool] = []
+
+    def outer(f):
+        def inner():
+            try:
+                return f()
+            except e_type:
+                if not warned:
+                    print("WARNING:", message, file=sys.stderr)
+                    warned.append(True)
+                raise
+
+        return inner
+
+    return outer
+
+
+@_warn_once(
+    "PC/SC not available. Smart card protocols will not function.",
+    EstablishContextException,
+)
 def list_ccid_devices():
-    try:
-        return _list_ccid_devices()
-    except Exception as e:
-        global _pcsc_missing
-        if not _pcsc_missing and isinstance(e, EstablishContextException):
-            _pcsc_missing = True
-            print(
-                "WARNING: PCSC not available. Smart card protocols will not function.",
-                file=sys.stderr,
-            )
-        logger.error("Unable to list CCID devices", exc_info=e)
-        return []
+    return _list_ccid_devices()
+
+
+@_warn_once("No CTAP HID backend available. FIDO protocols will not function.")
+def list_ctap_devices():
+    return _list_ctap_devices()
+
+
+@_warn_once("No OTP HID backend available. OTP protocols will not function.")
+def list_otp_devices():
+    return _list_otp_devices()
 
 
 def is_fips_version(version: Version) -> bool:
-    """True if a given firmware version indicates a YubiKey FIPS"""
+    """True if a given firmware version indicates a YubiKey (4) FIPS"""
     return (4, 4, 0) <= version < (4, 5, 0)
 
 
@@ -105,7 +135,11 @@ def scan_devices() -> Tuple[Mapping[PID, int], int]:
     fingerprints = set()
     merged: Dict[PID, int] = {}
     for list_devs in CONNECTION_LIST_MAPPING.values():
-        devs = list_devs()
+        try:
+            devs = list_devs()
+        except Exception as e:
+            logger.error("Unable to list devices for connection", exc_info=e)
+            devs = []
         merged.update(Counter(d.pid for d in devs if d.pid is not None))
         fingerprints.update({d.fingerprint for d in devs})
     if sys.platform == "win32" and not bool(ctypes.windll.shell32.IsUserAnAdmin()):
@@ -133,7 +167,13 @@ def list_all_devices() -> List[Tuple[YkmanDevice, DeviceInfo]]:
     devices = []
 
     for connection_type, list_devs in CONNECTION_LIST_MAPPING.items():
-        for dev in list_devs():
+        try:
+            devs = list_devs()
+        except Exception as e:
+            logger.error("Unable to list devices for connection", exc_info=e)
+            devs = []
+
+        for dev in devs:
             if dev.pid not in handled_pids and pids.get(dev.pid, True):
                 try:
                     with dev.open_connection(connection_type) as conn:
@@ -159,9 +199,19 @@ def connect_to_device(
     :return: An open connection to the device, the device reference, and the device
         information read from the device.
     """
+    failed_connections = set()
     retry_ccid = []
     for connection_type in connection_types:
-        for dev in CONNECTION_LIST_MAPPING[connection_type]():
+        try:
+            devs = CONNECTION_LIST_MAPPING[connection_type]()
+        except Exception as e:
+            logger.error(
+                f"Error listing connection of type {connection_type}", exc_info=e
+            )
+            failed_connections.add(connection_type)
+            continue
+
+        for dev in devs:
             try:
                 conn = dev.open_connection(connection_type)
             except NoCardException:
@@ -173,6 +223,9 @@ def connect_to_device(
                 conn.close()
             else:
                 return conn, dev, info
+
+    if set(connection_types) == failed_connections:
+        raise ConnectionNotAvailableException(connection_types)
 
     # NEO ejects the card when other interfaces are used, and returns it after ~3s.
     for _ in range(6):
@@ -196,14 +249,14 @@ def connect_to_device(
     raise ValueError("No YubiKey found with the given interface(s)")
 
 
-def _otp_read_data(conn):
+def _otp_read_data(conn) -> Tuple[Version, Optional[int]]:
     otp = YubiOtpSession(conn)
     version = otp.version
+    serial: Optional[int] = None
     try:
         serial = otp.get_serial()
     except Exception as e:
         logger.debug("Unable to read serial over OTP, no serial", exc_info=e)
-        serial = None
     return version, serial
 
 
@@ -220,6 +273,7 @@ SCAN_APPLETS = {
 
 
 def _read_info_ccid(conn, key_type, interfaces):
+    version: Optional[Version] = None
     try:
         mgmt = ManagementSession(conn)
         version = mgmt.version
@@ -230,7 +284,6 @@ def _read_info_ccid(conn, key_type, interfaces):
             conn.send_and_receive(b"\xa4\x04\x00\x08")
     except ApplicationNotAvailableError:
         logger.debug("Unable to select Management application, use fallback.")
-        version = None
 
     # Synthesize data
     capabilities = CAPABILITY(0)
@@ -246,7 +299,7 @@ def _read_info_ccid(conn, key_type, interfaces):
         serial = None
 
     if version is None:
-        version = (3, 0, 0)  # Guess, no way to know
+        version = Version(3, 0, 0)  # Guess, no way to know
 
     # Scan for remaining capabilities
     protocol = SmartCardProtocol(conn)
@@ -260,7 +313,10 @@ def _read_info_ccid(conn, key_type, interfaces):
             logger.debug("Missing applet: aid: %s, capability: %s", aid, code)
         except Exception as e:
             logger.error(
-                "Error selecting aid: %s, capability: %s", aid, code, exc_info=e,
+                "Error selecting aid: %s, capability: %s",
+                aid,
+                code,
+                exc_info=e,
             )
 
     # Assume U2F on devices >= 3.3.0
@@ -276,7 +332,7 @@ def _read_info_ccid(conn, key_type, interfaces):
             enabled_capabilities={},  # Populated later
             auto_eject_timeout=0,
             challenge_response_timeout=0,
-            device_flags=0,
+            device_flags=DEVICE_FLAG(0),
         ),
         serial=serial,
         version=version,
@@ -327,7 +383,7 @@ def _read_info_otp(conn, key_type, interfaces):
         }
     elif key_type == YUBIKEY.YKP:
         capabilities = {
-            TRANSPORT.USB: CAPABILITY.OTP | TRANSPORT.U2F,
+            TRANSPORT.USB: CAPABILITY.OTP | CAPABILITY.U2F,
         }
     else:
         capabilities = {
@@ -339,7 +395,7 @@ def _read_info_otp(conn, key_type, interfaces):
             enabled_capabilities={},  # Populated later
             auto_eject_timeout=0,
             challenge_response_timeout=0,
-            device_flags=0,
+            device_flags=DEVICE_FLAG(0),
         ),
         serial=serial,
         version=version,
@@ -353,8 +409,12 @@ def _read_info_ctap(conn, key_type, interfaces):
     try:
         mgmt = ManagementSession(conn)
         return mgmt.read_device_info()
-    except Exception:  # SKY 1 or NEO
-        version = (3, 0, 0)  # Guess, no way to know
+    except Exception:  # SKY 1, NEO, or YKP
+        # Best guess version
+        if key_type == YUBIKEY.YKP:
+            version = Version(4, 0, 0)
+        else:
+            version = Version(3, 0, 0)
 
         supported_apps = {TRANSPORT.USB: CAPABILITY.U2F}
         if key_type == YUBIKEY.NEO:
@@ -366,7 +426,7 @@ def _read_info_ctap(conn, key_type, interfaces):
                 enabled_capabilities={},  # Populated later
                 auto_eject_timeout=0,
                 challenge_response_timeout=0,
-                device_flags=0,
+                device_flags=DEVICE_FLAG(0),
             ),
             serial=None,
             version=version,
@@ -403,9 +463,11 @@ def read_info(pid: Optional[PID], conn: Connection) -> DeviceInfo:
     ):
         usb_enabled = info.supported_capabilities[TRANSPORT.USB]
         if usb_enabled == (CAPABILITY.OTP | CAPABILITY.U2F | USB_INTERFACE.CCID):
-            # YubiKey Edge, hide unusable CCID interface
-            usb_enabled = CAPABILITY.OTP | CAPABILITY.U2F
-            info.supported_capabilities = {TRANSPORT.USB: usb_enabled}
+            # YubiKey Edge, hide unusable CCID interface from supported
+            # usb_enabled = CAPABILITY.OTP | CAPABILITY.U2F
+            info.supported_capabilities = {
+                TRANSPORT.USB: CAPABILITY.OTP | CAPABILITY.U2F
+            }
 
         if USB_INTERFACE.OTP not in interfaces:
             usb_enabled &= ~CAPABILITY.OTP
@@ -484,14 +546,22 @@ def get_name(info: DeviceInfo, key_type: Optional[YUBIKEY]) -> str:
         if info.has_transport(TRANSPORT.NFC):
             device_name = "Security Key NFC"
     elif key_type == YUBIKEY.YK4:
-        if info.version[0] == 0:
-            return "Yubikey (%d.%d.%d)" % info.version
+        major_version = info.version[0]
+        if major_version < 4:
+            if info.version[0] == 0:
+                return "YubiKey (%d.%d.%d)" % info.version
+            else:
+                return "YubiKey"
+        elif major_version == 4:
+            if is_fips_version(info.version):  # YK4 FIPS
+                device_name = "YubiKey FIPS"
+            elif usb_supported == CAPABILITY.OTP | CAPABILITY.U2F:
+                device_name = "YubiKey Edge"
+            else:
+                device_name = "YubiKey 4"
+
         if _is_preview(info.version):
             device_name = "YubiKey Preview"
-        elif is_fips_version(info.version):  # YK4 FIPS
-            device_name = "YubiKey FIPS"
-        elif usb_supported == CAPABILITY.OTP | CAPABILITY.U2F:
-            device_name = "YubiKey Edge"
         elif info.version >= (5, 1, 0):
             is_nano = info.form_factor in (
                 FORM_FACTOR.USB_A_NANO,
@@ -504,9 +574,12 @@ def get_name(info: DeviceInfo, key_type: Optional[YUBIKEY]) -> str:
                 FORM_FACTOR.USB_C_BIO,
             )
 
-            name_parts = ["YubiKey"]
-            if not (is_bio or info.is_fips):
-                name_parts.append("5")
+            if info.is_sky:
+                name_parts = ["Security Key"]
+            else:
+                name_parts = ["YubiKey"]
+                if not is_bio:
+                    name_parts.append("5")
             if is_c:
                 name_parts.append("C")
             elif info.form_factor == FORM_FACTOR.USB_C_LIGHTNING:
@@ -520,9 +593,9 @@ def get_name(info: DeviceInfo, key_type: Optional[YUBIKEY]) -> str:
             if is_bio:
                 name_parts.append("Bio")
                 if _fido_only(usb_supported):
-                    name_parts.append("(FIDO Edition)")
+                    name_parts.append("- FIDO Edition")
             if info.is_fips:
                 name_parts.append("FIPS")
-            device_name = " ".join(name_parts).replace("5 C", "5C")
+            device_name = " ".join(name_parts).replace("5 C", "5C").replace("5 A", "5A")
 
     return device_name

@@ -46,28 +46,25 @@ from cryptography.hazmat.primitives.serialization import (
 from cryptography.hazmat.primitives.asymmetric import rsa, ec
 
 from enum import Enum, IntEnum, unique
-from collections import namedtuple
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Tuple
 import time
 import struct
 import logging
 
+from typing import NamedTuple
+
 logger = logging.getLogger(__name__)
 
 
-_KeySlot = namedtuple(
-    "KeySlot",
-    [
-        "value",
-        "index",
-        "key_id",
-        "fingerprint",
-        "gen_time",
-        "uif",  # touch policy
-        "crt",  # Control Reference Template
-    ],
-)
+class _KeySlot(NamedTuple):
+    value: str
+    indx: int
+    key_id: int
+    fingerprint: int
+    gen_time: int
+    uif: int  # touch policy
+    crt: bytes  # Control Reference Template
 
 
 @unique
@@ -87,6 +84,10 @@ class TOUCH_MODE(IntEnum):  # noqa: N801
     FIXED = 0x02
     CACHED = 0x03
     CACHED_FIXED = 0x04
+
+    @property
+    def is_fixed(self):
+        return "FIXED" in self.name
 
     def __str__(self):
         if self == TOUCH_MODE.OFF:
@@ -117,7 +118,10 @@ class INS(IntEnum):  # noqa: N801
     SELECT_DATA = 0xA5
 
 
-PinRetries = namedtuple("PinRetries", ["pin", "reset", "admin"])
+class PinRetries(NamedTuple):
+    pin: int
+    reset: int
+    admin: int
 
 
 PW1 = 0x81
@@ -181,7 +185,7 @@ def _format_ec_attributes(key_slot, curve_name):
 
 
 def _get_key_attributes(key, key_slot):
-    if isinstance(key, rsa.RSAPrivateKey):
+    if isinstance(key, rsa.RSAPrivateKeyWithSerialization):
         if key.private_numbers().public_numbers.e != 65537:
             raise ValueError("RSA keys with e != 65537 are not supported!")
         return _format_rsa_attributes(key.key_size)
@@ -198,26 +202,28 @@ def _get_key_template(key, key_slot, crt=False):
             body += tlv.value
         return Tlv(0x7F48, header) + Tlv(0x5F48, body)
 
-    if isinstance(key, rsa.RSAPrivateKey):
-        private_numbers = key.private_numbers()
+    values: Tuple[Tlv, ...]
+
+    if isinstance(key, rsa.RSAPrivateKeyWithSerialization):
+        rsa_numbers = key.private_numbers()
         ln = (key.key_size // 8) // 2
 
         e = Tlv(0x91, b"\x01\x00\x01")  # e=65537
-        p = Tlv(0x92, int2bytes(private_numbers.p, ln))
-        q = Tlv(0x93, int2bytes(private_numbers.q, ln))
+        p = Tlv(0x92, int2bytes(rsa_numbers.p, ln))
+        q = Tlv(0x93, int2bytes(rsa_numbers.q, ln))
         values = (e, p, q)
         if crt:
-            dp = Tlv(0x94, int2bytes(private_numbers.dmp1, ln))
-            dq = Tlv(0x95, int2bytes(private_numbers.dmq1, ln))
-            qinv = Tlv(0x96, int2bytes(private_numbers.iqmp, ln))
-            n = Tlv(0x97, int2bytes(private_numbers.public_numbers.n, 2 * ln))
+            dp = Tlv(0x94, int2bytes(rsa_numbers.dmp1, ln))
+            dq = Tlv(0x95, int2bytes(rsa_numbers.dmq1, ln))
+            qinv = Tlv(0x96, int2bytes(rsa_numbers.iqmp, ln))
+            n = Tlv(0x97, int2bytes(rsa_numbers.public_numbers.n, 2 * ln))
             values += (dp, dq, qinv, n)
 
-    elif isinstance(key, ec.EllipticCurvePrivateKey):
-        private_numbers = key.private_numbers()
+    elif isinstance(key, ec.EllipticCurvePrivateKeyWithSerialization):
+        ec_numbers = key.private_numbers()
         ln = key.key_size // 8
 
-        privkey = Tlv(0x92, int2bytes(private_numbers.private_value, ln))
+        privkey = Tlv(0x92, int2bytes(ec_numbers.private_value, ln))
         values = (privkey,)
 
     elif _get_curve_name(key) in ("ed25519", "x25519"):
@@ -333,13 +339,23 @@ class OpenPgpController(object):
         self._app.send_apdu(0, INS.PUT_DATA, do >> 8, do & 0xFF, data)
 
     def _select_certificate(self, key_slot):
-        self._app.send_apdu(
-            0,
-            INS.SELECT_DATA,
-            3 - key_slot.index,
-            0x04,
-            Tlv(0, Tlv(0x60, Tlv(0x5C, b"\x7f\x21")))[1:],
-        )
+        try:
+            require_version(self.version, (5, 2, 0))
+            data: bytes = Tlv(0x60, Tlv(0x5C, b"\x7f\x21"))
+            if self.version <= (5, 4, 3):
+                # These use a non-standard byte in the command.
+                data = b"\x06" + data  # 6 is the length of the data.
+            self._app.send_apdu(
+                0,
+                INS.SELECT_DATA,
+                3 - key_slot.indx,
+                0x04,
+                data,
+            )
+        except NotSupportedError:
+            if key_slot == KEY_SLOT.AUT:
+                return  # Older version still support AUT, which is the default slot.
+            raise
 
     def _read_version(self):
         bcd_hex = self._app.send_apdu(0, INS.GET_VERSION, 0, 0).hex()
@@ -449,8 +465,8 @@ class OpenPgpController(object):
         )
 
     def read_certificate(self, key_slot):
-        require_version(self.version, (5, 2, 0))
         if key_slot == KEY_SLOT.ATT:
+            require_version(self.version, (5, 2, 0))
             data = self._get_data(DO.ATT_CERTIFICATE)
         else:
             self._select_certificate(key_slot)
@@ -461,9 +477,9 @@ class OpenPgpController(object):
 
     def import_certificate(self, key_slot, certificate):
         """Requires Admin PIN verification."""
-        require_version(self.version, (5, 2, 0))
         cert_data = certificate.public_bytes(Encoding.DER)
         if key_slot == KEY_SLOT.ATT:
+            require_version(self.version, (5, 2, 0))
             self._put_data(DO.ATT_CERTIFICATE, cert_data)
         else:
             self._select_certificate(key_slot)
@@ -561,8 +577,8 @@ class OpenPgpController(object):
 
     def delete_certificate(self, key_slot):
         """Requires Admin PIN verification."""
-        require_version(self.version, (5, 2, 0))
         if key_slot == KEY_SLOT.ATT:
+            require_version(self.version, (5, 2, 0))
             self._put_data(DO.ATT_CERTIFICATE, b"")
         else:
             self._select_certificate(key_slot)
@@ -571,7 +587,7 @@ class OpenPgpController(object):
     def attest(self, key_slot):
         """Requires User PIN verification."""
         require_version(self.version, (5, 2, 0))
-        self._app.send_apdu(0x80, INS.GET_ATTESTATION, key_slot.index, 0)
+        self._app.send_apdu(0x80, INS.GET_ATTESTATION, key_slot.indx, 0)
         return self.read_certificate(key_slot)
 
 
