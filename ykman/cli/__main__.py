@@ -359,7 +359,7 @@ def list_keys(ctx, serials, readers):
                     click.echo(f"{name} [{mode}] <access denied>")
 
 
-COMMANDS = (list_keys, info, otp, openpgp, oath, piv, fido, config, apdu)
+COMMANDS = (list_keys, info, openpgp, oath, piv, fido, config, apdu)
 
 
 for cmd in COMMANDS:

@@ -102,7 +102,7 @@ def info(ctx):
         click.echo(f"FIPS Approved Mode: {'Yes' if session.locked else 'No'}")
 
 
-@oath.command()
+# @oath.command()
 @click.pass_context
 @click.confirmation_option(
     "-f",
