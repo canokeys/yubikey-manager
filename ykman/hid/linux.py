@@ -97,6 +97,7 @@ def get_usage(dev):
 
 def list_devices():
     devices = []
+    return devices
     for hidraw in glob.glob("/dev/hidraw*"):
         usage = None
         try:
