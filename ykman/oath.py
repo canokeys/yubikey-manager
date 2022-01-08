@@ -44,8 +44,9 @@ def is_steam(credential):
 def calculate_steam(app, credential, timestamp=None):
     timestamp = int(timestamp or time())
     resp = app.calculate(credential.id, struct.pack(">q", timestamp // 30))
-    offset = resp[-1] & 0x0F
-    code = struct.unpack(">I", resp[offset : offset + 4])[0] & 0x7FFFFFFF
+    # offset = resp[-1] & 0x0F
+    # code = struct.unpack(">I", resp[offset : offset + 4])[0] & 0x7FFFFFFF
+    code = struct.unpack(">I", resp)[0]
     chars = []
     for i in range(5):
         chars.append(STEAM_CHAR_TABLE[code % len(STEAM_CHAR_TABLE)])

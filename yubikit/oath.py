@@ -366,12 +366,12 @@ class OathSession:
 
     def calculate(self, credential_id: bytes, challenge: bytes) -> bytes:
         resp = Tlv.unpack(
-            TAG_RESPONSE,
+            TAG_TRUNCATED,
             self.protocol.send_apdu(
                 0,
                 INS_CALCULATE,
                 0,
-                0,
+                1,
                 Tlv(TAG_NAME, credential_id) + Tlv(TAG_CHALLENGE, challenge),
             ),
         )
