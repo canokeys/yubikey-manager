@@ -41,7 +41,7 @@ def Entrypoint(dist, group, name, **kwargs):
 block_cipher = None
 
 
-a = Entrypoint("yubikey-manager", "console_scripts", "ykman")
+a = Entrypoint("canokey-manager", "console_scripts", "ckman")
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(
@@ -51,7 +51,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name="ykman",
+    name="ckman",
     icon="NONE",
     debug=False,
     bootloader_ignore_signals=False,

@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "yubikey-manager"
+name = "canokey-manager"
 version = "4.0.7"
-description = "Tool for managing your YubiKey configuration."
+description = "Tool for managing your CanoKey configuration."
 authors = ["Dain Nilsson <dain@yubico.com>"]
 license = "BSD"
-homepage = "https://github.com/Yubico/yubikey-manager"
-repository = "https://github.com/Yubico/yubikey-manager"
-keywords = ["yubikey", "yubiotp", "piv", "fido"]
+homepage = "https://github.com/canokeys/yubikey-manager"
+repository = "https://github.com/canokeys/yubikey-manager"
+keywords = ["canokey", "piv", "fido"]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: End Users/Desktop",
@@ -42,7 +42,7 @@ pyOpenSSL = "^17.0"
 makefun = "^1.9.5"
 
 [tool.poetry.scripts]
-ykman = "ykman.cli.__main__:main"
+ckman = "ykman.cli.__main__:main"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
