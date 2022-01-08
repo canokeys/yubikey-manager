@@ -28,16 +28,16 @@ jobs:
         shell: bash
         run: |
           pip install dist/*.tar.gz
-          ykman --version
-          [[ -z "$(ykman --version | grep -E "not found|missing")" ]]
+          ckman --version
+          [[ -z "$(ckman --version | grep -E "not found|missing")" ]]
           pip uninstall -y yubikey-manager
 
       - name: Install from wheel
         shell: bash
         run: |
           pip install dist/*.whl
-          ykman --version
-          [[ -z "$(ykman --version | grep -E "not found|missing")" ]]
+          ckman --version
+          [[ -z "$(ckman --version | grep -E "not found|missing")" ]]
           pip uninstall -y yubikey-manager
 
       - name: Clone PyInstaller
@@ -61,13 +61,13 @@ jobs:
         run: |
           pip install dist/*.whl
           pyinstaller ykman.spec
-          dist/ykman.exe --version
-          [[ -z "$(dist/ykman.exe --version | grep -E "not found|missing")" ]]
+          dist/ckman.exe --version
+          [[ -z "$(dist/ckman.exe --version | grep -E "not found|missing")" ]]
           export REF=$(echo ${GITHUB_REF} | cut -d '/' -f 3)
-          mv dist/ykman.exe dist/ykman-$REF.exe
+          mv dist/ckman.exe dist/ckman-$REF.exe
 
       - name: Upload build
         uses: actions/upload-artifact@v1
         with:
-          name: ykman-builds-windows
+          name: ckman-builds-windows
           path: dist

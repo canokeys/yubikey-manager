@@ -32,15 +32,15 @@ jobs:
       - name: Install from tar.gz
         run: |
           pip install dist/*.tar.gz
-          ykman --version
-          [[ -z "$(ykman --version | grep -E "not found|missing")" ]]
+          ckman --version
+          [[ -z "$(ckman --version | grep -E "not found|missing")" ]]
           pip uninstall -y yubikey-manager
 
       - name: Install from wheel
         run: |
           pip install dist/*.whl
-          ykman --version
-          [[ -z "$(ykman --version | grep -E "not found|missing")" ]]
+          ckman --version
+          [[ -z "$(ckman --version | grep -E "not found|missing")" ]]
           pip uninstall -y yubikey-manager
 
       - name: PyInstaller
@@ -48,13 +48,13 @@ jobs:
           pip install pyinstaller
           pip install dist/*.whl
           pyinstaller ykman.spec
-          dist/ykman --version
-          [[ -z "$(dist/ykman --version | grep -E "not found|missing")" ]]
+          dist/ckman --version
+          [[ -z "$(dist/ckman --version | grep -E "not found|missing")" ]]
           export REF=$(echo ${GITHUB_REF} | cut -d '/' -f 3)
-          mv dist/ykman dist/ykman-$REF
+          mv dist/ckman dist/ckman-$REF
 
       - name: Upload build
         uses: actions/upload-artifact@v1
         with:
-          name: ykman-builds-macos
+          name: ckman-builds-macos
           path: dist
