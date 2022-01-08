@@ -27,11 +27,11 @@ jobs:
           pip install poetry
           poetry install
 
-      - name: Run pre-commit hooks
-        run: |
-          pip install pre-commit
-          pre-commit install
-          pre-commit run --all-files --verbose
+      # - name: Run pre-commit hooks
+      #   run: |
+      #     pip install pre-commit
+      #     pre-commit install
+      #     pre-commit run --all-files --verbose
 
       # - name: Run unit tests
       #   run: poetry run pytest
