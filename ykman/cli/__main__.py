@@ -25,13 +25,13 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from yubikit.core import ApplicationNotAvailableError
-from yubikit.core.otp import OtpConnection
-from yubikit.core.fido import FidoConnection
-from yubikit.core.smartcard import SmartCardConnection
-from yubikit.management import USB_INTERFACE
+from canokit.core import ApplicationNotAvailableError
+from canokit.core.otp import OtpConnection
+from canokit.core.fido import FidoConnection
+from canokit.core.smartcard import SmartCardConnection
+from canokit.management import USB_INTERFACE
 
-import ykman.logging_setup
+import ckman.logging_setup
 
 from .. import __version__
 from ..pcsc import list_devices as list_ccid, list_readers
@@ -110,7 +110,7 @@ def retrying_connect(serial, connections, attempts=10, state=None):
 def print_version(ctx, param, value):
     if not value or ctx.resilient_parsing:
         return
-    click.echo(f"YubiKey Manager (ykman) version: {__version__}")
+    click.echo(f"YubiKey Manager (ckman) version: {__version__}")
     ctx.exit()
 
 
@@ -127,7 +127,7 @@ def _disabled_interface(connections, cmd_name):
     cli_fail(
         f"Command '{cmd_name}' requires one of the following USB interfaces "
         f"to be enabled: '{req}'.\n\n"
-        "Use 'ykman config usb' to set the enabled USB interfaces."
+        "Use 'ckman config usb' to set the enabled USB interfaces."
     )
 
 
@@ -217,7 +217,7 @@ def _run_cmd_for_single(ctx, cmd, connections, reader_name=None):
     "-l",
     "--log-level",
     default=None,
-    type=click.Choice(ykman.logging_setup.LOG_LEVEL_NAMES, case_sensitive=False),
+    type=click.Choice(ckman.logging_setup.LOG_LEVEL_NAMES, case_sensitive=False),
     help="Enable logging at given verbosity level.",
 )
 @click.option(
@@ -260,16 +260,16 @@ def cli(ctx, device, log_level, log_file, reader):
 
     \b
       List connected YubiKeys, only output serial number:
-      $ ykman list --serials
+      $ ckman list --serials
 
     \b
       Show information about YubiKey with serial number 0123456:
-      $ ykman --device 0123456 info
+      $ ckman --device 0123456 info
     """
     ctx.obj = YkmanContextObject()
 
     if log_level:
-        ykman.logging_setup.setup(log_level, log_file=log_file)
+        ckman.logging_setup.setup(log_level, log_file=log_file)
 
     if reader and device:
         ctx.fail("--reader and --device options can't be combined.")

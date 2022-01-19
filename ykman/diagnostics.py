@@ -6,13 +6,13 @@ from .device import read_info, get_name
 from .piv import get_piv_info
 from .openpgp import OpenPgpController, get_openpgp_info
 
-from yubikit.core.smartcard import SmartCardConnection
-from yubikit.core.fido import FidoConnection
-from yubikit.core.otp import OtpConnection
-from yubikit.management import ManagementSession
-from yubikit.yubiotp import YubiOtpSession
-from yubikit.piv import PivSession
-from yubikit.oath import OathSession
+from canokit.core.smartcard import SmartCardConnection
+from canokit.core.fido import FidoConnection
+from canokit.core.otp import OtpConnection
+from canokit.management import ManagementSession
+from canokit.yubiotp import YubiOtpSession
+from canokit.piv import PivSession
+from canokit.oath import OathSession
 from fido2.ctap import CtapError
 from fido2.ctap2 import Ctap2, ClientPin
 
@@ -173,7 +173,7 @@ def fido_info():
 
 def get_diagnostics():
     lines = []
-    lines.append(f"ykman: {ykman_version}")
+    lines.append(f"ckman: {ykman_version}")
     log_sys_info(lines.append)
     lines.append("")
 

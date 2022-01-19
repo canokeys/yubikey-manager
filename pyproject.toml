@@ -21,10 +21,13 @@ include = [
   "tests/",
 ]
 packages = [
-  { include = "yubikit" },
-  { include = "ykman" },
+  { include = "canokit" },
+  { include = "ckman" },
 ]
 
+[[tool.poetry.source]]
+name = "tuna"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 
 [tool.poetry.dependencies]
 python = "^3.6"
@@ -42,7 +45,7 @@ pyOpenSSL = "^17.0"
 makefun = "^1.9.5"
 
 [tool.poetry.scripts]
-ckman = "ykman.cli.__main__:main"
+ckman = "ckman.cli.__main__:main"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

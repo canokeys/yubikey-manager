@@ -26,9 +26,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-from yubikit.core import Tlv, BadResponseError, NotSupportedError
-from yubikit.core.smartcard import ApduError, SW
-from yubikit.piv import (
+from canokit.core import Tlv, BadResponseError, NotSupportedError
+from canokit.core.smartcard import ApduError, SW
+from canokit.piv import (
     PivSession,
     SLOT,
     OBJECT_ID,

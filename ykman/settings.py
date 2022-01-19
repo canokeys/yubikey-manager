@@ -30,9 +30,9 @@ import json
 from pathlib import Path
 
 
-HOME_CONFIG = "~/.ykman"
-XDG_DATA_HOME = os.environ.get("XDG_DATA_HOME", "~/.local/share") + "/ykman"
-XDG_CONFIG_HOME = os.environ.get("XDG_CONFIG_HOME", "~/.config") + "/ykman"
+HOME_CONFIG = "~/.ckman"
+XDG_DATA_HOME = os.environ.get("XDG_DATA_HOME", "~/.local/share") + "/ckman"
+XDG_CONFIG_HOME = os.environ.get("XDG_CONFIG_HOME", "~/.config") + "/ckman"
 
 USE_XDG = "YKMAN_XDG_EXPERIMENTAL" in os.environ
 

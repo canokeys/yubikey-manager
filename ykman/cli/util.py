@@ -28,10 +28,10 @@
 import functools
 import click
 import sys
-from yubikit.core.otp import OtpConnection
-from yubikit.core.smartcard import SmartCardConnection
-from yubikit.core.fido import FidoConnection
-from yubikit.oath import parse_b32_key
+from canokit.core.otp import OtpConnection
+from canokit.core.smartcard import SmartCardConnection
+from canokit.core.fido import FidoConnection
+from canokit.oath import parse_b32_key
 from collections import OrderedDict
 from collections.abc import MutableMapping
 from cryptography.hazmat.primitives import serialization

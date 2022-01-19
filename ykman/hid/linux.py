@@ -25,7 +25,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from yubikit.core.otp import OtpConnection
+from canokit.core.otp import OtpConnection
 from .base import OtpYubiKeyDevice, YUBICO_VID, USAGE_OTP
 
 import glob

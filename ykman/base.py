@@ -25,8 +25,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from yubikit.core import TRANSPORT, YubiKeyDevice
-from yubikit.management import USB_INTERFACE
+from canokit.core import TRANSPORT, YubiKeyDevice
+from canokit.management import USB_INTERFACE
 from enum import Enum, IntEnum, unique
 from typing import Optional, Hashable
 

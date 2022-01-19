@@ -25,8 +25,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from yubikit.core import TRANSPORT
-from yubikit.management import (
+from canokit.core import TRANSPORT
+from canokit.management import (
     ManagementSession,
     DeviceConfig,
     CAPABILITY,
@@ -73,15 +73,15 @@ def config(ctx):
 
     \b
       Disable PIV over NFC:
-      $ ykman config nfc --disable PIV
+      $ ckman config nfc --disable PIV
 
     \b
       Enable all applications over USB:
-      $ ykman config usb --enable-all
+      $ ckman config usb --enable-all
 
     \b
       Generate and set a random application lock code:
-      $ ykman config set-lock-code --generate
+      $ ckman config set-lock-code --generate
     """
     ctx.obj["controller"] = ManagementSession(ctx.obj["conn"])
 
@@ -544,7 +544,7 @@ def mode(ctx, mode, touch_eject, autoeject_timeout, chalresp_timeout, force):
     Manage connection modes (USB Interfaces).
 
     This command is generaly used with YubiKeys prior to the 5 series.
-    Use "ykman config usb" for more granular control on YubiKey 5 and later.
+    Use "ckman config usb" for more granular control on YubiKey 5 and later.
 
     Get the current connection mode of the YubiKey, or set it to MODE.
 
@@ -555,11 +555,11 @@ def mode(ctx, mode, touch_eject, autoeject_timeout, chalresp_timeout, force):
 
     \b
       Set the OTP and FIDO mode:
-      $ ykman config mode OTP+FIDO
+      $ ckman config mode OTP+FIDO
 
     \b
       Set the CCID only mode and use touch to eject the smart card:
-      $ ykman config mode CCID --touch-eject
+      $ ckman config mode CCID --touch-eject
     """
     info = ctx.obj["info"]
     mgmt = ctx.obj["controller"]

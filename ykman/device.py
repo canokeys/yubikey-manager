@@ -25,7 +25,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from yubikit.core import (
+from canokit.core import (
     AID,
     TRANSPORT,
     Version,
@@ -33,13 +33,13 @@ from yubikit.core import (
     NotSupportedError,
     ApplicationNotAvailableError,
 )
-from yubikit.core.otp import OtpConnection, CommandRejectedError
-from yubikit.core.fido import FidoConnection
-from yubikit.core.smartcard import (
+from canokit.core.otp import OtpConnection, CommandRejectedError
+from canokit.core.fido import FidoConnection
+from canokit.core.smartcard import (
     SmartCardConnection,
     SmartCardProtocol,
 )
-from yubikit.management import (
+from canokit.management import (
     ManagementSession,
     DeviceInfo,
     DeviceConfig,
@@ -48,7 +48,7 @@ from yubikit.management import (
     FORM_FACTOR,
     DEVICE_FLAG,
 )
-from yubikit.yubiotp import YubiOtpSession
+from canokit.yubiotp import YubiOtpSession
 from .base import PID, YUBIKEY, YkmanDevice
 from .hid import (
     list_otp_devices as _list_otp_devices,

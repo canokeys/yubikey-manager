@@ -124,7 +124,7 @@ def apply_aliases(argv):
                 click.echo(
                     "WARNING: "
                     "The use of this command is deprecated and will be removed!\n"
-                    "Replace with: ykman " + " ".join(argv[1:]) + "\n",
+                    "Replace with: ckman " + " ".join(argv[1:]) + "\n",
                     err=True,
                 )
             break  # Only handle first match

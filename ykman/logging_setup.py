@@ -25,8 +25,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from ykman import __version__ as ykman_version
-from ykman.util import get_windows_version
+from ckman import __version__ as ykman_version
+from ckman.util import get_windows_version
 import platform
 import logging
 import ctypes
@@ -74,7 +74,7 @@ def setup(log_level_name, log_file=None):
 
     logger = logging.getLogger(__name__)
     logger.info("Initialized logging for level: %s", log_level_name)
-    logger.info("Running ykman version: %s", ykman_version)
+    logger.info("Running ckman version: %s", ykman_version)
     log_sys_info(logger.debug)
 
 

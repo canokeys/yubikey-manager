@@ -26,7 +26,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from ..base import YkmanDevice, PID
-from yubikit.core import TRANSPORT
+from canokit.core import TRANSPORT
 
 YUBICO_VID = 0x1050
 

@@ -39,7 +39,7 @@ from .util import (
     EnumChoice,
 )
 
-from yubikit.core.smartcard import ApduError, SW, SmartCardConnection
+from canokit.core.smartcard import ApduError, SW, SmartCardConnection
 
 logger = logging.getLogger(__name__)
 
@@ -84,11 +84,11 @@ def openpgp(ctx):
 
     \b
       Set the retries for PIN, Reset Code and Admin PIN to 10:
-      $ ykman openpgp access set-retries 10 10 10
+      $ ckman openpgp access set-retries 10 10 10
 
     \b
       Require touch to use the authentication key:
-      $ ykman openpgp keys set-touch aut on
+      $ ckman openpgp keys set-touch aut on
     """
     ctx.obj["controller"] = OpenPgpController(ctx.obj["conn"])
 
@@ -200,7 +200,7 @@ def set_touch(ctx, key, policy, admin_pin, force):
     individually for each key slot. To see the current touch policy, run
 
     \b
-        $ ykman openpgp info
+        $ ckman openpgp info
 
     Touch policies:
 

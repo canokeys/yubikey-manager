@@ -25,7 +25,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from yubikit.core import (
+from canokit.core import (
     AID,
     Tlv,
     NotSupportedError,
@@ -33,7 +33,7 @@ from yubikit.core import (
     int2bytes,
     bytes2int,
 )
-from yubikit.core.smartcard import SmartCardConnection, SmartCardProtocol, ApduError, SW
+from canokit.core.smartcard import SmartCardConnection, SmartCardProtocol, ApduError, SW
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend

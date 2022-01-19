@@ -25,7 +25,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from yubikit.oath import OATH_TYPE
+from canokit.oath import OATH_TYPE
 from time import time
 import struct
 

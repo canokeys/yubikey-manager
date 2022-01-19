@@ -25,13 +25,13 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from yubikit.core import TRANSPORT
-from yubikit.core.otp import OtpConnection
-from yubikit.core.fido import FidoConnection
-from yubikit.core.smartcard import SmartCardConnection
-from yubikit.management import CAPABILITY, USB_INTERFACE
-from yubikit.yubiotp import YubiOtpSession
-from yubikit.oath import OathSession
+from canokit.core import TRANSPORT
+from canokit.core.otp import OtpConnection
+from canokit.core.fido import FidoConnection
+from canokit.core.smartcard import SmartCardConnection
+from canokit.management import CAPABILITY, USB_INTERFACE
+from canokit.yubiotp import YubiOtpSession
+from canokit.oath import OathSession
 
 from .util import cli_fail
 from ..device import is_fips_version, get_name, connect_to_device

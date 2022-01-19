@@ -27,9 +27,9 @@
 
 from . import __version__
 from .scancodes import KEYBOARD_LAYOUT
-from yubikit.core.otp import modhex_encode
-from yubikit.yubiotp import YubiOtpSession
-from yubikit.oath import parse_b32_key
+from canokit.core.otp import modhex_encode
+from canokit.yubiotp import YubiOtpSession
+from canokit.oath import parse_b32_key
 from enum import Enum
 from http.client import HTTPSConnection
 from typing import Iterable
