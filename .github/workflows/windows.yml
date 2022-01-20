@@ -10,6 +10,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Rename packages
+        run: |
+          mv ykman ckman
+          mv yubikit canokit
+
       - name: Install dependencies
         run: |
           choco install swig

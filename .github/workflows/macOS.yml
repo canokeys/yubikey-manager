@@ -10,6 +10,11 @@ jobs:
     steps:
       - uses: actions/checkout@v1
 
+      - name: Rename packages
+        run: |
+          mv ykman ckman
+          mv yubikit canokit
+
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
