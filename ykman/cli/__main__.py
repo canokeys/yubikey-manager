@@ -110,7 +110,7 @@ def retrying_connect(serial, connections, attempts=10, state=None):
 def print_version(ctx, param, value):
     if not value or ctx.resilient_parsing:
         return
-    click.echo(f"YubiKey Manager (ckman) version: {__version__}")
+    click.echo(f"CanoKey Manager (forked from YubiKey Manager) version: {__version__}")
     ctx.exit()
 
 
@@ -165,9 +165,9 @@ def _run_cmd_for_single(ctx, cmd, connections, reader_name=None):
                     logger.error("Failure connecting to card", exc_info=e)
                     cli_fail(f"Failed to connect: {e}")
             elif len(readers) > 1:
-                cli_fail("Multiple YubiKeys on external readers detected.")
+                cli_fail("Multiple keys on external readers detected.")
             else:
-                cli_fail("No YubiKey found on external reader.")
+                cli_fail("No key found on external reader.")
         else:
             ctx.fail("Not a CCID command.")
 
@@ -180,10 +180,10 @@ def _run_cmd_for_single(ctx, cmd, connections, reader_name=None):
             devices, state = _scan_changes(state)
             n_devs = sum(devices.values())
         except TimeoutError:
-            cli_fail("No YubiKey detected!")
+            cli_fail("No key detected!")
     if n_devs > 1:
         cli_fail(
-            "Multiple YubiKeys detected. Use --device SERIAL to specify "
+            "Multiple keys detected. Use --device SERIAL to specify "
             "which one to use."
         )
 
