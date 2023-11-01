@@ -3,7 +3,7 @@
 import re
 import os
 
-with open("ykman/__init__.py") as f:
+with open("ckman/__init__.py") as f:
     version_file = f.read()
 version = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", version_file, re.M).group(1)
 version_tuple = "(" + version.split("-")[0].replace(".", ", ") + ", 0)"

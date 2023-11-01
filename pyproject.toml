@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "canokey-manager"
-version = "5.2.0"
+version = "5.2.0rc3"
 description = "Tool for managing your CanoKey configuration."
 authors = ["Dain Nilsson <dain@yubico.com>", "Yuxiang Zhang <yuxiang.zhang@tuna.tsinghua.edu.cn>"]
 license = "BSD"
@@ -21,8 +21,8 @@ include = [
   "tests/",
 ]
 packages = [
-  { include = "yubikit" },
-  { include = "ykman" },
+  { include = "canokit" },
+  { include = "ckman" },
 ]
 
 
@@ -44,7 +44,7 @@ sphinx-rtd-theme = {version = "^1.2.2", python = ">=3.8"}
 sphinx-autodoc-typehints = {version = "^1.2.4", python = ">=3.8"}
 
 [tool.poetry.scripts]
-ckman = "ykman._cli.__main__:main"
+ckman = "ckman._cli.__main__:main"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
