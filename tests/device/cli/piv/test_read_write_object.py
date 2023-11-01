@@ -2,8 +2,8 @@ import os
 
 from cryptography.hazmat.primitives import serialization
 from ....util import generate_self_signed_certificate
-from yubikit.core import Tlv
-from yubikit.piv import OBJECT_ID, SLOT
+from canokit.core import Tlv
+from canokit.piv import OBJECT_ID, SLOT
 import pytest
 
 
@@ -11,7 +11,7 @@ DEFAULT_MANAGEMENT_KEY = "010203040506070801020304050607080102030405060708"
 
 
 class TestReadWriteObject:
-    def test_write_read_preserves_ansi_escapes(self, ykman_cli):
+    def test_write_read_preserves_ansi_escapes(self, ckman_cli):
         red = b"\x00\x1b[31m"
         blue = b"\x00\x1b[34m"
         reset = b"\x00\x1b[0m"
@@ -26,7 +26,7 @@ class TestReadWriteObject:
             + reset
             + b" world!"
         )
-        ykman_cli(
+        ckman_cli(
             "piv",
             "objects",
             "import",
@@ -36,15 +36,15 @@ class TestReadWriteObject:
             "-",
             input=data,
         )
-        output_data = ykman_cli(
+        output_data = ckman_cli(
             "piv", "objects", "export", "0x5f0001", "-"
         ).stdout_bytes
         assert data == output_data
 
-    def test_read_write_read_is_noop(self, ykman_cli):
+    def test_read_write_read_is_noop(self, ckman_cli):
         data = os.urandom(32)
 
-        ykman_cli(
+        ckman_cli(
             "piv",
             "objects",
             "import",
@@ -55,12 +55,12 @@ class TestReadWriteObject:
             input=data,
         )
 
-        output1 = ykman_cli(
+        output1 = ckman_cli(
             "piv", "objects", "export", hex(OBJECT_ID.AUTHENTICATION), "-"
         ).stdout_bytes
         assert output1 == data
 
-        ykman_cli(
+        ckman_cli(
             "piv",
             "objects",
             "import",
@@ -71,21 +71,21 @@ class TestReadWriteObject:
             input=output1,
         )
 
-        output2 = ykman_cli(
+        output2 = ckman_cli(
             "piv", "objects", "export", hex(OBJECT_ID.AUTHENTICATION), "-"
         ).stdout_bytes
         assert output2 == data
 
-    def test_read_write_certificate_as_object(self, ykman_cli):
+    def test_read_write_certificate_as_object(self, ckman_cli):
         with pytest.raises(SystemExit):
-            ykman_cli("piv", "objects", "export", hex(OBJECT_ID.AUTHENTICATION), "-")
+            ckman_cli("piv", "objects", "export", hex(OBJECT_ID.AUTHENTICATION), "-")
 
         cert = generate_self_signed_certificate()
         cert_bytes_der = cert.public_bytes(encoding=serialization.Encoding.DER)
 
         input_tlv = Tlv(0x70, cert_bytes_der) + Tlv(0x71, b"\0") + Tlv(0xFE, b"")
 
-        ykman_cli(
+        ckman_cli(
             "piv",
             "objects",
             "import",
@@ -96,13 +96,13 @@ class TestReadWriteObject:
             input=input_tlv,
         )
 
-        output1 = ykman_cli(
+        output1 = ckman_cli(
             "piv", "objects", "export", hex(OBJECT_ID.AUTHENTICATION), "-"
         ).stdout_bytes
         output_cert_bytes = Tlv.parse_dict(output1)[0x70]
         assert output_cert_bytes == cert_bytes_der
 
-        output2 = ykman_cli(
+        output2 = ckman_cli(
             "piv",
             "certificates",
             "export",

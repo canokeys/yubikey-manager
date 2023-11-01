@@ -1,8 +1,8 @@
 from fido2.ctap1 import ApduError
-from yubikit.core import TRANSPORT
-from yubikit.management import CAPABILITY
-from yubikit.core.smartcard import SW
-from ykman.fido import fips_change_pin, fips_verify_pin, fips_reset, is_in_fips_mode
+from canokit.core import TRANSPORT
+from canokit.management import CAPABILITY
+from canokit.core.smartcard import SW
+from ckman.fido import fips_change_pin, fips_verify_pin, fips_reset, is_in_fips_mode
 from . import condition
 
 import pytest

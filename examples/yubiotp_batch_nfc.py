@@ -9,9 +9,9 @@ is presented twice in the same session it will be ignored.
 Usage: yubiotp_batch_nfc.py <nfc_reader> <output_file>
 """
 
-from ykman import scripting as s
-from ykman.otp import format_csv
-from yubikit.yubiotp import YubiOtpSession, YubiOtpSlotConfiguration, SLOT
+from ckman import scripting as s
+from ckman.otp import format_csv
+from canokit.yubiotp import YubiOtpSession, YubiOtpSlotConfiguration, SLOT
 
 import os
 import sys

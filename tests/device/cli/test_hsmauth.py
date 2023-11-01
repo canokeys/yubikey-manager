@@ -3,7 +3,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 
-from yubikit.management import CAPABILITY
+from canokit.management import CAPABILITY
 from .. import condition
 
 import pytest
@@ -51,17 +51,17 @@ def tmp_file():
 @pytest.fixture(autouse=True)
 @condition.capability(CAPABILITY.OATH)
 @condition.min_version(5, 4, 3)
-def preconditions(ykman_cli):
-    ykman_cli("hsmauth", "reset", "-f")
+def preconditions(ckman_cli):
+    ckman_cli("hsmauth", "reset", "-f")
 
 
 class TestOATH:
-    def test_hsmauth_info(self, ykman_cli):
-        output = ykman_cli("hsmauth", "info").output
+    def test_hsmauth_info(self, ckman_cli):
+        output = ckman_cli("hsmauth", "info").output
         assert "version:" in output
 
-    def test_hsmauth_reset(self, ykman_cli):
-        output = ykman_cli("hsmauth", "reset", "-f").output
+    def test_hsmauth_reset(self, ckman_cli):
+        output = ckman_cli("hsmauth", "reset", "-f").output
         assert (
             "Success! All YubiHSM Auth data have been cleared from the YubiKey."
             in output
@@ -69,8 +69,8 @@ class TestOATH:
 
 
 class TestCredentials:
-    def test_import_credential_symmetric(self, ykman_cli):
-        ykman_cli(
+    def test_import_credential_symmetric(self, ckman_cli):
+        ckman_cli(
             "hsmauth",
             "credentials",
             "symmetric",
@@ -84,11 +84,11 @@ class TestCredentials:
             "-m",
             DEFAULT_MANAGEMENT_KEY,
         )
-        creds = ykman_cli("hsmauth", "credentials", "list").output
+        creds = ckman_cli("hsmauth", "credentials", "list").output
         assert "test-name-sym" in creds
 
-    def test_import_credential_symmetric_generate(self, ykman_cli):
-        output = ykman_cli(
+    def test_import_credential_symmetric_generate(self, ckman_cli):
+        output = ckman_cli(
             "hsmauth",
             "credentials",
             "symmetric",
@@ -102,8 +102,8 @@ class TestCredentials:
 
         assert "Generated ENC and MAC keys" in output
 
-    def test_import_credential_symmetric_derived(self, ykman_cli):
-        ykman_cli(
+    def test_import_credential_symmetric_derived(self, ckman_cli):
+        ckman_cli(
             "hsmauth",
             "credentials",
             "derive",
@@ -113,13 +113,13 @@ class TestCredentials:
             "-d",
             "password",
         )
-        creds = ykman_cli("hsmauth", "credentials", "list").output
+        creds = ckman_cli("hsmauth", "credentials", "list").output
         assert "test-name-sym-derived" in creds
 
     @condition.min_version(5, 6)
-    def test_import_credential_asymmetric(self, ykman_cli):
+    def test_import_credential_asymmetric(self, ckman_cli):
         pair = generate_pem_eccp256_keypair()
-        ykman_cli(
+        ckman_cli(
             "hsmauth",
             "credentials",
             "import",
@@ -131,17 +131,17 @@ class TestCredentials:
             "-",
             input=pair[0],
         )
-        creds = ykman_cli("hsmauth", "credentials", "list").output
+        creds = ckman_cli("hsmauth", "credentials", "list").output
         assert "test-name-asym" in creds
 
-        public_key_exported = ykman_cli(
+        public_key_exported = ckman_cli(
             "hsmauth", "credentials", "export", "test-name-asym", "-"
         ).stdout_bytes
         assert pair[1] == public_key_exported
 
     @condition.min_version(5, 6)
-    def test_generate_credential_asymmetric(self, ykman_cli):
-        ykman_cli(
+    def test_generate_credential_asymmetric(self, ckman_cli):
+        ckman_cli(
             "hsmauth",
             "credentials",
             "generate",
@@ -152,11 +152,11 @@ class TestCredentials:
             DEFAULT_MANAGEMENT_KEY,
         )
 
-        creds = ykman_cli("hsmauth", "credentials", "list").output
+        creds = ckman_cli("hsmauth", "credentials", "list").output
         assert "test-name-asym-generated" in creds
 
-    def test_import_credential_touch_required(self, ykman_cli):
-        ykman_cli(
+    def test_import_credential_touch_required(self, ckman_cli):
+        ckman_cli(
             "hsmauth",
             "credentials",
             "derive",
@@ -168,14 +168,14 @@ class TestCredentials:
             "-t",
         )
 
-        creds = ykman_cli("hsmauth", "credentials", "list").output
+        creds = ckman_cli("hsmauth", "credentials", "list").output
         assert "On" in creds
         assert "test-name-touch" in creds
 
     @condition.min_version(5, 6)
-    def test_export_public_key_to_file(self, ykman_cli, eccp256_keypair, tmp_file):
+    def test_export_public_key_to_file(self, ckman_cli, eccp256_keypair, tmp_file):
         private_key_file, public_key = eccp256_keypair
-        ykman_cli(
+        ckman_cli(
             "hsmauth",
             "credentials",
             "import",
@@ -187,7 +187,7 @@ class TestCredentials:
             private_key_file,
         )
 
-        ykman_cli(
+        ckman_cli(
             "hsmauth",
             "credentials",
             "export",
@@ -199,8 +199,8 @@ class TestCredentials:
         assert public_key_from_file == public_key
 
     @condition.min_version(5, 6)
-    def test_export_public_key_symmetric_credential(self, ykman_cli):
-        ykman_cli(
+    def test_export_public_key_symmetric_credential(self, ckman_cli):
+        ckman_cli(
             "hsmauth",
             "credentials",
             "derive",
@@ -214,10 +214,10 @@ class TestCredentials:
         )
 
         with pytest.raises(SystemExit):
-            ykman_cli("hsmauth", "credentials", "export", "test-name-sym")
+            ckman_cli("hsmauth", "credentials", "export", "test-name-sym")
 
-    def test_delete_credential(self, ykman_cli):
-        ykman_cli(
+    def test_delete_credential(self, ckman_cli):
+        ckman_cli(
             "hsmauth",
             "credentials",
             "derive",
@@ -229,16 +229,16 @@ class TestCredentials:
             "-m",
             DEFAULT_MANAGEMENT_KEY,
         )
-        old_creds = ykman_cli("hsmauth", "credentials", "list").output
+        old_creds = ckman_cli("hsmauth", "credentials", "list").output
         assert "delete-me" in old_creds
-        ykman_cli("hsmauth", "credentials", "delete", "delete-me", "-f")
-        new_creds = ykman_cli("hsmauth", "credentials", "list").output
+        ckman_cli("hsmauth", "credentials", "delete", "delete-me", "-f")
+        new_creds = ckman_cli("hsmauth", "credentials", "list").output
         assert "delete-me" not in new_creds
 
 
 class TestManagementKey:
-    def test_change_management_key(self, ykman_cli):
-        ykman_cli(
+    def test_change_management_key(self, ckman_cli):
+        ckman_cli(
             "hsmauth",
             "access",
             "change-management-key",
@@ -250,7 +250,7 @@ class TestManagementKey:
 
         with pytest.raises(SystemExit):
             # Should fail - wrong current key
-            ykman_cli(
+            ckman_cli(
                 "hsmauth",
                 "access",
                 "change-management-key",
@@ -261,7 +261,7 @@ class TestManagementKey:
             )
 
         # Should succeed
-        ykman_cli(
+        ckman_cli(
             "hsmauth",
             "access",
             "change-management-key",
@@ -271,8 +271,8 @@ class TestManagementKey:
             DEFAULT_MANAGEMENT_KEY,
         )
 
-    def test_change_management_key_generate(self, ykman_cli):
-        output = ykman_cli(
+    def test_change_management_key_generate(self, ckman_cli):
+        output = ckman_cli(
             "hsmauth",
             "access",
             "change-management-key",
