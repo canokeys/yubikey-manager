@@ -79,7 +79,7 @@ try:
     def list_ctap_devices() -> List[CtapYubiKeyDevice]:
         devs = []
         for desc in list_descriptors():
-            if desc.vid == 0x1050 or desc.vid == 0x20a0:
+            if desc.vid == 0x42d4:
                 try:
                     devs.append(CtapYubiKeyDevice(desc))
                 except ValueError:
