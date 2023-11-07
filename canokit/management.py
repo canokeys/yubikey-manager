@@ -462,8 +462,7 @@ class ManagementSession:
         return self.backend.version
 
     def read_device_info(self) -> DeviceInfo:
-        """Get detailed information about the YubiKey."""
-        require_version(self.version, (4, 1, 0))
+        """Get detailed information about the CanoKey."""
         return DeviceInfo.parse(self.backend.read_config(), self.version)
 
     def write_device_config(
