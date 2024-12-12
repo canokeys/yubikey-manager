@@ -1,6 +1,6 @@
 #  vim: set fileencoding=utf-8 :
 
-from yubikit.oath import (
+from canokit.oath import (
     CredentialData,
     OATH_TYPE,
     HASH_ALGORITHM,

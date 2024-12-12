@@ -14,15 +14,15 @@ int(year)
 month = month[0].upper() + month[1:].lower()
 
 print(
-    rf""".TH YKMAN "1" "{month} {year}" "ykman {version}" "User Commands"
+    rf""".TH YKMAN "1" "{month} {year}" "ckman {version}" "User Commands"
 .SH NAME
-ykman \- YubiKey Manager (ykman)
+ckman \- YubiKey Manager (ckman)
 .SH SYNOPSIS
-.B ykman
+.B ckman
 [\fI\,OPTIONS\/\fR] \fI\,COMMAND \/\fR[\fI\,ARGS\/\fR]..."""
 )
 
-help_text = check_output(["poetry", "run", "ykman", "--help"]).decode()  # nosec
+help_text = check_output(["poetry", "run", "ckman", "--help"]).decode()  # nosec
 parts = re.split(r"\b[A-Z][a-z]+:\s+", help_text)
 description = re.split(r"\s{2,}", parts[1])[1].strip()
 

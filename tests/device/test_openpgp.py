@@ -1,7 +1,7 @@
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec, rsa, ed25519, x25519, padding
 from cryptography.hazmat.primitives import hashes
-from yubikit.openpgp import (
+from canokit.openpgp import (
     OpenPgpSession,
     KEY_REF,
     RSA_SIZE,
@@ -9,8 +9,8 @@ from yubikit.openpgp import (
     KdfIterSaltedS2k,
     KdfNone,
 )
-from yubikit.management import CAPABILITY
-from yubikit.core.smartcard import ApduError
+from canokit.management import CAPABILITY
+from canokit.core.smartcard import ApduError
 from . import condition
 
 import pytest

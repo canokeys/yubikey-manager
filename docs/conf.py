@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath("../"))
 
 
 def get_version():
-    with open("../ykman/__init__.py", "r") as f:
+    with open("../ckman/__init__.py", "r") as f:
         match = re.search(r"(?m)^__version__\s*=\s*['\"](.+)['\"]$", f.read())
         return match.group(1)
 
