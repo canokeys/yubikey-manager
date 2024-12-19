@@ -387,30 +387,36 @@ class _ManagementSmartCardBackend(_Backend):
                 select_bytes = select_bytes[:-2]
             select_str = select_bytes.decode()
             self.version = Version.from_string(select_str)
-            try:
-                # For Canokey
-                self.protocol.select(b"\xF0\x00\x00\x00\x00")
-                select_bytes, _ = self.protocol.connection.send_and_receive(b"\x00\x31\x00\x00\x20")
-                select_str = select_bytes.decode()
-                self.version = Version.from_string(select_str)
-                self.is_cano = True
-                logger.debug(f"select_str={select_str} self.version={self.version}")
+            if self.try_canokey_admin():
                 return
-            except Error as e:
-                #print(e)
-                pass
             # For YubiKey NEO, we use the OTP application for further commands
             if self.version[0] == 3:
                 # Workaround to "de-select" on NEO, otherwise it gets stuck.
                 self.protocol.connection.send_and_receive(b"\xa4\x04\x00\x08")
                 self.protocol.select(AID.OTP)
         except ApplicationNotAvailableError:
+            if self.try_canokey_admin():
+                return
             if smartcard_connection.transport == TRANSPORT.NFC:
                 # Probably NEO over NFC
                 status = self.protocol.select(AID.OTP)
                 self.version = Version.from_bytes(status[:3])
             else:
                 raise
+
+    def try_canokey_admin(self):
+        try:
+            # For Canokey
+            self.protocol.select(b"\xF0\x00\x00\x00\x00")
+            select_bytes, _ = self.protocol.connection.send_and_receive(b"\x00\x31\x00\x00\x20")
+            select_str = select_bytes.decode()
+            self.version = Version.from_string(select_str)
+            self.is_cano = True
+            logger.debug(f"select_str={select_str} self.version={self.version}")
+            return True
+        except Error as e:
+            #print(e)
+            return False
 
     def close(self):
         self.protocol.close()
