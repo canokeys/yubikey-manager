@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "canokey-manager"
-version = "5.3.1"
+version = "5.3.2"
 description = "Tool for managing your CanoKey configuration."
 authors = ["Dain Nilsson <dain@yubico.com>", "Yuxiang Zhang <yuxiang.zhang@tuna.tsinghua.edu.cn>"]
 license = "BSD"
