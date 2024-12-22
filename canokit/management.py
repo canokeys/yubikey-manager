@@ -525,6 +525,12 @@ class ManagementSession:
             },
             is_locked=False,
         )
+        try:
+            is_nfc_en = self.backend.read_nfc_enable()
+            logger.debug(f"is_nfc_en={is_nfc_en}")
+            if not is_nfc_en:
+                info.config.enabled_capabilities[TRANSPORT.NFC] = 0
+        except: pass
         return info
 
     def read_device_info(self) -> DeviceInfo:
