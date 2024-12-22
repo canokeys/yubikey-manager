@@ -1116,7 +1116,12 @@ class PivSession:
         require_version(self.version, (5, 7, 0))
         slot = SLOT(slot)
         logger.debug(f"Deleting key in slot {slot}")
-        self.protocol.send_apdu(0, INS_MOVE_KEY, 0xFF, slot)
+        
+        data: bytes = Tlv(TAG_GEN_ALGORITHM, int2bytes(KEY_TYPE.ECCP256))
+        self.protocol.send_apdu(
+            0, INS_GENERATE_ASYMMETRIC, 0, slot, Tlv(0xAC, data)
+        )
+        # self.protocol.send_apdu(0, INS_MOVE_KEY, 0xFF, slot)
         logger.info(f"Key deleted in slot {slot}")
 
     def _change_reference(self, ins, p2, value1, value2):
