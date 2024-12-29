@@ -221,9 +221,13 @@ class SmartCardProtocol:
 
         # Read chained response
         buf = b""
-        while sw >> 8 == SW1_HAS_MORE_DATA:
+        while sw >> 8 == SW1_HAS_MORE_DATA or \
+            (self._ins_send_remaining == 0xA5 and sw == SW.OK): # workaround for OATH
             buf += response
-            response, sw = self.connection.send_and_receive(get_data)
+            response, sw_n = self.connection.send_and_receive(get_data)
+            if sw_n == SW.CONDITIONS_NOT_SATISFIED:
+                break
+            sw = sw_n
 
         if sw != SW.OK:
             raise ApduError(response, sw)
