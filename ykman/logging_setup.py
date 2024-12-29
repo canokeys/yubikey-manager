@@ -25,10 +25,10 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from ykman import __version__ as ykman_version
-from ykman.util import get_windows_version
-from ykman.logging import init_logging
-from yubikit.logging import LOG_LEVEL
+from ckman import __version__ as ckman_version
+from ckman.util import get_windows_version
+from ckman.logging import init_logging
+from canokit.logging import LOG_LEVEL
 from datetime import datetime
 import platform
 import logging
@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 
 def log_sys_info(log):
-    log(f"ykman: {ykman_version}")
+    log(f"ckman: {ckman_version}")
     log(f"Python: {sys.version}")
     log(f"Platform: {sys.platform}")
     log(f"Arch: {platform.machine()}")

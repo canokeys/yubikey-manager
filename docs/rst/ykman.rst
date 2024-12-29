@@ -1,69 +1,69 @@
-ykman package
+ckman package
 =============
 
 Submodules
 ----------
 
-ykman.base module
+ckman.base module
 -----------------
 
-.. automodule:: ykman.base
+.. automodule:: ckman.base
    :members:
    :undoc-members:
    :show-inheritance:
 
-ykman.device module
+ckman.device module
 -------------------
 
-.. automodule:: ykman.device
+.. automodule:: ckman.device
    :members:
    :undoc-members:
    :show-inheritance:
 
-ykman.fido module
+ckman.fido module
 -----------------
 
-.. automodule:: ykman.fido
+.. automodule:: ckman.fido
    :members:
    :undoc-members:
    :show-inheritance:
 
-ykman.hsmauth module
+ckman.hsmauth module
 --------------------
 
-.. automodule:: ykman.hsmauth
+.. automodule:: ckman.hsmauth
    :members:
    :undoc-members:
    :show-inheritance:
 
-ykman.oath module
+ckman.oath module
 -----------------
 
-.. automodule:: ykman.oath
+.. automodule:: ckman.oath
    :members:
    :undoc-members:
    :show-inheritance:
 
-ykman.openpgp module
+ckman.openpgp module
 --------------------
 
-.. automodule:: ykman.openpgp
+.. automodule:: ckman.openpgp
    :members:
    :undoc-members:
    :show-inheritance:
 
-ykman.piv module
+ckman.piv module
 -----------------
 
-.. automodule:: ykman.piv
+.. automodule:: ckman.piv
    :members:
    :undoc-members:
    :show-inheritance:
 
-ykman.scripting module
+ckman.scripting module
 ----------------------
 
-.. automodule:: ykman.scripting
+.. automodule:: ckman.scripting
    :members:
    :undoc-members:
    :show-inheritance:
@@ -71,7 +71,7 @@ ykman.scripting module
 Module contents
 ---------------
 
-.. automodule:: ykman
+.. automodule:: ckman
    :members:
    :undoc-members:
    :show-inheritance:

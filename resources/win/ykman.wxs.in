@@ -5,7 +5,7 @@
 
    <Product Id="*" UpgradeCode="fba0ab59-48d1-4050-82eb-acad31cf2239" Name="$(var.ProductName)" Version="$(var.ProductVersion)" Manufacturer="Yubico AB" Language="1033">
       <Package InstallerVersion="301" Compressed="yes" InstallScope="perMachine" Platform="x64" Description="$(var.ProductName) $(var.ProductVersion)" />
-      <Media Id="1" Cabinet="ykman.cab" EmbedCab="yes"/>
+      <Media Id="1" Cabinet="ckman.cab" EmbedCab="yes"/>
 
       <WixVariable Id="WixUIDialogBmp" Value="yubico-msi-background.png" />
       <WixVariable Id="WixUIBannerBmp" Value="yubico-msi-y-banner.png" />

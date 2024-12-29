@@ -27,8 +27,8 @@
 
 import time
 import struct
-from yubikit.core.fido import FidoConnection
-from yubikit.core.smartcard import SW
+from canokit.core.fido import FidoConnection
+from canokit.core.smartcard import SW
 from fido2.ctap1 import Ctap1, ApduError
 
 from typing import Optional

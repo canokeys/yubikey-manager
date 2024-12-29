@@ -25,15 +25,15 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from yubikit.core import Connection, PID, TRANSPORT, YUBIKEY
-from yubikit.core.otp import OtpConnection
-from yubikit.core.fido import FidoConnection
-from yubikit.core.smartcard import SmartCardConnection
-from yubikit.management import (
+from canokit.core import Connection, PID, TRANSPORT, YUBIKEY
+from canokit.core.otp import OtpConnection
+from canokit.core.fido import FidoConnection
+from canokit.core.smartcard import SmartCardConnection
+from canokit.management import (
     DeviceInfo,
     USB_INTERFACE,
 )
-from yubikit.support import read_info
+from canokit.support import read_info
 from .base import YkmanDevice
 from .hid import (
     list_otp_devices as _list_otp_devices,

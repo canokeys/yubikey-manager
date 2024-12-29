@@ -28,8 +28,8 @@
 import functools
 import click
 import sys
-from yubikit.management import DeviceInfo
-from yubikit.oath import parse_b32_key
+from canokit.management import DeviceInfo
+from canokit.oath import parse_b32_key
 from collections import OrderedDict
 from collections.abc import MutableMapping
 from cryptography.hazmat.primitives import serialization

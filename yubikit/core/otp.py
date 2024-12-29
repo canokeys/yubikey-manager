@@ -26,7 +26,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from . import Connection, CommandError, TimeoutError, Version, USB_INTERFACE
-from yubikit.logging import LOG_LEVEL
+from canokit.logging import LOG_LEVEL
 
 from time import sleep
 from threading import Event

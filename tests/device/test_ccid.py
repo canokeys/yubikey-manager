@@ -1,4 +1,4 @@
-from yubikit.core.smartcard import SmartCardProtocol, ApplicationNotAvailableError
+from canokit.core.smartcard import SmartCardProtocol, ApplicationNotAvailableError
 import pytest
 
 

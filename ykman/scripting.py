@@ -30,12 +30,12 @@ from .base import YkmanDevice
 from .device import list_all_devices, scan_devices
 from .pcsc import list_devices as list_ccid
 
-from yubikit.core import TRANSPORT
-from yubikit.core.otp import OtpConnection
-from yubikit.core.smartcard import SmartCardConnection
-from yubikit.core.fido import FidoConnection
-from yubikit.management import DeviceInfo
-from yubikit.support import get_name, read_info
+from canokit.core import TRANSPORT
+from canokit.core.otp import OtpConnection
+from canokit.core.smartcard import SmartCardConnection
+from canokit.core.fido import FidoConnection
+from canokit.management import DeviceInfo
+from canokit.support import get_name, read_info
 from smartcard.Exceptions import NoCardException, CardConnectionException
 
 from time import sleep
@@ -47,7 +47,7 @@ Various helpers intended to simplify scripting.
 
 Add an import to your script:
 
-  from ykman import scripting as s
+  from ckman import scripting as s
 
 Example usage:
 

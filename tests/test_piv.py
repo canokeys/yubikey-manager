@@ -1,7 +1,7 @@
-from ykman.piv import generate_random_management_key, parse_rfc4514_string
+from ckman.piv import generate_random_management_key, parse_rfc4514_string
 
-from yubikit.core import NotSupportedError, Version
-from yubikit.piv import (
+from canokit.core import NotSupportedError, Version
+from canokit.piv import (
     KEY_TYPE,
     MANAGEMENT_KEY_TYPE,
     PIN_POLICY,

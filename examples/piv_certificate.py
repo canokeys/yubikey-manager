@@ -22,15 +22,15 @@ And instead use sign_csr_builder instead of sign_certificate_builder.
 Usage: piv_certificate.py
 """
 
-from yubikit.piv import (
+from canokit.piv import (
     PivSession,
     SLOT,
     KEY_TYPE,
     MANAGEMENT_KEY_TYPE,
     DEFAULT_MANAGEMENT_KEY,
 )
-from ykman.piv import sign_certificate_builder
-from ykman import scripting as s
+from ckman.piv import sign_certificate_builder
+from ckman import scripting as s
 
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization

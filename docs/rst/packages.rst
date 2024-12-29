@@ -4,9 +4,9 @@ yubikey-manager
 .. toctree::
    :maxdepth: 4
 
-   yubikit
+   canokit
 
 .. toctree::
    :maxdepth: 4
 
-   ykman
+   ckman

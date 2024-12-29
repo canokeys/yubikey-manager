@@ -14,7 +14,7 @@ $SIMPLE_VERSION = "$($VERSION.Split('-')[0]).0"
 
 cd $PSScriptRoot
 
-((Get-Content -path ykman.wxs.in -Raw) -replace '{RELEASE_VERSION}',$SIMPLE_VERSION) | Set-Content -Path ckman.wxs
+((Get-Content -path ckman.wxs.in -Raw) -replace '{RELEASE_VERSION}',$SIMPLE_VERSION) | Set-Content -Path ckman.wxs
 
 $env:SRCDIR = $SOURCE_DIR
 

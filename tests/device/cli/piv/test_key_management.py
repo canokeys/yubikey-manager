@@ -2,7 +2,7 @@ from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
-from yubikit.core import NotSupportedError
+from canokit.core import NotSupportedError
 from .util import DEFAULT_PIN, DEFAULT_MANAGEMENT_KEY
 from ... import condition
 import tempfile
@@ -45,10 +45,10 @@ def tmp_file():
 
 class TestKeyExport:
     @condition.min_version(5, 3)
-    def test_from_metadata(self, ykman_cli):
+    def test_from_metadata(self, ckman_cli):
         pair = generate_pem_eccp256_keypair()
 
-        ykman_cli(
+        ckman_cli(
             "piv",
             "keys",
             "import",
@@ -58,12 +58,12 @@ class TestKeyExport:
             "-",
             input=pair[0],
         )
-        exported = ykman_cli("piv", "keys", "export", "9a", "-").stdout_bytes
+        exported = ckman_cli("piv", "keys", "export", "9a", "-").stdout_bytes
         assert exported == pair[1]
 
     @condition.min_version(4, 3)
-    def test_from_metadata_or_attestation(self, ykman_cli):
-        der = ykman_cli(
+    def test_from_metadata_or_attestation(self, ckman_cli):
+        der = ckman_cli(
             "piv",
             "keys",
             "generate",
@@ -76,14 +76,14 @@ class TestKeyExport:
             DEFAULT_MANAGEMENT_KEY,
             "-",
         ).stdout_bytes
-        exported = ykman_cli(
+        exported = ckman_cli(
             "piv", "keys", "export", "9a", "-F", "der", "-"
         ).stdout_bytes
         assert der == exported
 
-    def test_from_metadata_or_cert(self, ykman_cli):
+    def test_from_metadata_or_cert(self, ckman_cli):
         private_key_pem, public_key_pem = generate_pem_eccp256_keypair()
-        ykman_cli(
+        ckman_cli(
             "piv",
             "keys",
             "import",
@@ -93,7 +93,7 @@ class TestKeyExport:
             "-",
             input=private_key_pem,
         )
-        ykman_cli(
+        ckman_cli(
             "piv",
             "certificates",
             "generate",
@@ -108,14 +108,14 @@ class TestKeyExport:
             input=public_key_pem,
         )
 
-        exported = ykman_cli("piv", "keys", "export", "9a", "-").stdout_bytes
+        exported = ckman_cli("piv", "keys", "export", "9a", "-").stdout_bytes
 
         assert public_key_pem == exported
 
     @condition.max_version(5, 2, 9)
-    def test_from_cert_verify(self, ykman_cli):
+    def test_from_cert_verify(self, ckman_cli):
         private_key_pem, public_key_pem = generate_pem_eccp256_keypair()
-        ykman_cli(
+        ckman_cli(
             "piv",
             "keys",
             "import",
@@ -125,7 +125,7 @@ class TestKeyExport:
             "-",
             input=private_key_pem,
         )
-        ykman_cli(
+        ckman_cli(
             "piv",
             "certificates",
             "generate",
@@ -139,13 +139,13 @@ class TestKeyExport:
             "test",
             input=public_key_pem,
         )
-        ykman_cli("piv", "keys", "export", "9a", "--verify", "-P", DEFAULT_PIN, "-")
+        ckman_cli("piv", "keys", "export", "9a", "--verify", "-P", DEFAULT_PIN, "-")
 
     @condition.max_version(5, 2, 9)
-    def test_from_cert_verify_fails(self, ykman_cli):
+    def test_from_cert_verify_fails(self, ckman_cli):
         private_key_pem = generate_pem_eccp256_keypair()[0]
         public_key_pem = generate_pem_eccp256_keypair()[1]
-        ykman_cli(
+        ckman_cli(
             "piv",
             "keys",
             "import",
@@ -155,7 +155,7 @@ class TestKeyExport:
             "-",
             input=private_key_pem,
         )
-        ykman_cli(
+        ckman_cli(
             "piv",
             "certificates",
             "generate",
@@ -170,28 +170,28 @@ class TestKeyExport:
             input=public_key_pem,
         )
         with pytest.raises(SystemExit):
-            ykman_cli("piv", "keys", "export", "9a", "--verify", "-P", DEFAULT_PIN, "-")
+            ckman_cli("piv", "keys", "export", "9a", "--verify", "-P", DEFAULT_PIN, "-")
 
 
 class TestKeyManagement:
     @condition.check(not_roca)
-    def test_generate_key_default(self, ykman_cli):
-        output = ykman_cli(
+    def test_generate_key_default(self, ckman_cli):
+        output = ckman_cli(
             "piv", "keys", "generate", "9a", "-m", DEFAULT_MANAGEMENT_KEY, "-"
         ).output
         assert "BEGIN PUBLIC KEY" in output
 
     @condition.check(roca)
-    def test_generate_key_default_cve201715361(self, ykman_cli):
+    def test_generate_key_default_cve201715361(self, ckman_cli):
         with pytest.raises(NotSupportedError):
-            ykman_cli(
+            ckman_cli(
                 "piv", "keys", "generate", "9a", "-m", DEFAULT_MANAGEMENT_KEY, "-"
             )
 
     @condition.check(not_roca)
     @condition.yk4_fips(False)
-    def test_generate_key_rsa1024(self, ykman_cli):
-        output = ykman_cli(
+    def test_generate_key_rsa1024(self, ckman_cli):
+        output = ckman_cli(
             "piv",
             "keys",
             "generate",
@@ -205,8 +205,8 @@ class TestKeyManagement:
         assert "BEGIN PUBLIC KEY" in output
 
     @condition.check(not_roca)
-    def test_generate_key_rsa2048(self, ykman_cli):
-        output = ykman_cli(
+    def test_generate_key_rsa2048(self, ckman_cli):
+        output = ckman_cli(
             "piv",
             "keys",
             "generate",
@@ -221,9 +221,9 @@ class TestKeyManagement:
 
     @condition.yk4_fips(False)
     @condition.check(roca)
-    def test_generate_key_rsa1024_cve201715361(self, ykman_cli):
+    def test_generate_key_rsa1024_cve201715361(self, ckman_cli):
         with pytest.raises(NotSupportedError):
-            ykman_cli(
+            ckman_cli(
                 "piv",
                 "keys",
                 "generate",
@@ -236,9 +236,9 @@ class TestKeyManagement:
             )
 
     @condition.check(roca)
-    def test_generate_key_rsa2048_cve201715361(self, ykman_cli):
+    def test_generate_key_rsa2048_cve201715361(self, ckman_cli):
         with pytest.raises(NotSupportedError):
-            ykman_cli(
+            ckman_cli(
                 "piv",
                 "keys",
                 "generate",
@@ -250,8 +250,8 @@ class TestKeyManagement:
                 "-",
             )
 
-    def test_generate_key_eccp256(self, ykman_cli):
-        output = ykman_cli(
+    def test_generate_key_eccp256(self, ckman_cli):
+        output = ckman_cli(
             "piv",
             "keys",
             "generate",
@@ -264,8 +264,8 @@ class TestKeyManagement:
         ).output
         assert "BEGIN PUBLIC KEY" in output
 
-    def test_import_key_eccp256(self, ykman_cli):
-        ykman_cli(
+    def test_import_key_eccp256(self, ckman_cli):
+        ckman_cli(
             "piv",
             "keys",
             "import",
@@ -277,8 +277,8 @@ class TestKeyManagement:
         )
 
     @condition.min_version(4)
-    def test_generate_key_eccp384(self, ykman_cli):
-        output = ykman_cli(
+    def test_generate_key_eccp384(self, ckman_cli):
+        output = ckman_cli(
             "piv",
             "keys",
             "generate",
@@ -292,8 +292,8 @@ class TestKeyManagement:
         assert "BEGIN PUBLIC KEY" in output
 
     @condition.min_version(4)
-    def test_generate_key_pin_policy_always(self, ykman_cli):
-        output = ykman_cli(
+    def test_generate_key_pin_policy_always(self, ckman_cli):
+        output = ckman_cli(
             "piv",
             "keys",
             "generate",
@@ -309,9 +309,9 @@ class TestKeyManagement:
         assert "BEGIN PUBLIC KEY" in output
 
     @condition.min_version(4)
-    def test_import_key_pin_policy_always(self, ykman_cli):
+    def test_import_key_pin_policy_always(self, ckman_cli):
         for pin_policy in ["ALWAYS", "always"]:
-            ykman_cli(
+            ckman_cli(
                 "piv",
                 "keys",
                 "import",
@@ -325,8 +325,8 @@ class TestKeyManagement:
             )
 
     @condition.min_version(4)
-    def test_generate_key_touch_policy_always(self, ykman_cli):
-        output = ykman_cli(
+    def test_generate_key_touch_policy_always(self, ckman_cli):
+        output = ckman_cli(
             "piv",
             "keys",
             "generate",
@@ -342,9 +342,9 @@ class TestKeyManagement:
         assert "BEGIN PUBLIC KEY" in output
 
     @condition.min_version(4)
-    def test_import_key_touch_policy_always(self, ykman_cli):
+    def test_import_key_touch_policy_always(self, ckman_cli):
         for touch_policy in ["ALWAYS", "always"]:
-            ykman_cli(
+            ckman_cli(
                 "piv",
                 "keys",
                 "import",
@@ -358,8 +358,8 @@ class TestKeyManagement:
             )
 
     @condition.min_version(4, 3)
-    def test_attest_key(self, ykman_cli):
-        ykman_cli(
+    def test_attest_key(self, ckman_cli):
+        ckman_cli(
             "piv",
             "keys",
             "generate",
@@ -370,11 +370,11 @@ class TestKeyManagement:
             DEFAULT_MANAGEMENT_KEY,
             "-",
         )
-        output = ykman_cli("piv", "keys", "attest", "9a", "-").output
+        output = ckman_cli("piv", "keys", "attest", "9a", "-").output
         assert "BEGIN CERTIFICATE" in output
 
-    def _test_generate_csr(self, ykman_cli, tmp_file, algo):
-        ykman_cli(
+    def _test_generate_csr(self, ckman_cli, tmp_file, algo):
+        ckman_cli(
             "piv",
             "keys",
             "generate",
@@ -385,7 +385,7 @@ class TestKeyManagement:
             DEFAULT_MANAGEMENT_KEY,
             tmp_file,
         )
-        output = ykman_cli(
+        output = ckman_cli(
             "piv",
             "certificates",
             "request",
@@ -402,15 +402,15 @@ class TestKeyManagement:
 
     @condition.yk4_fips(False)
     @condition.check(not_roca)
-    def test_generate_csr_rsa1024(self, ykman_cli, tmp_file):
-        self._test_generate_csr(ykman_cli, tmp_file, "RSA1024")
+    def test_generate_csr_rsa1024(self, ckman_cli, tmp_file):
+        self._test_generate_csr(ckman_cli, tmp_file, "RSA1024")
 
-    def test_generate_csr_eccp256(self, ykman_cli, tmp_file):
-        self._test_generate_csr(ykman_cli, tmp_file, "ECCP256")
+    def test_generate_csr_eccp256(self, ckman_cli, tmp_file):
+        self._test_generate_csr(ckman_cli, tmp_file, "ECCP256")
 
-    def test_import_verify_correct_cert_succeeds_with_pin(self, ykman_cli, tmp_file):
+    def test_import_verify_correct_cert_succeeds_with_pin(self, ckman_cli, tmp_file):
         # Set up a key in the slot and create a certificate for it
-        public_key_pem = ykman_cli(
+        public_key_pem = ckman_cli(
             "piv",
             "keys",
             "generate",
@@ -422,7 +422,7 @@ class TestKeyManagement:
             "-",
         ).output
 
-        ykman_cli(
+        ckman_cli(
             "piv",
             "certificates",
             "generate",
@@ -437,10 +437,10 @@ class TestKeyManagement:
             input=public_key_pem,
         )
 
-        ykman_cli("piv", "certificates", "export", "9a", tmp_file)
+        ckman_cli("piv", "certificates", "export", "9a", tmp_file)
 
         with pytest.raises(SystemExit):
-            ykman_cli(
+            ckman_cli(
                 "piv",
                 "certificates",
                 "import",
@@ -451,7 +451,7 @@ class TestKeyManagement:
                 DEFAULT_MANAGEMENT_KEY,
             )
 
-        ykman_cli(
+        ckman_cli(
             "piv",
             "certificates",
             "import",
@@ -463,7 +463,7 @@ class TestKeyManagement:
             "-P",
             DEFAULT_PIN,
         )
-        ykman_cli(
+        ckman_cli(
             "piv",
             "certificates",
             "import",
@@ -475,9 +475,9 @@ class TestKeyManagement:
             input=DEFAULT_PIN,
         )
 
-    def test_import_verify_wrong_cert_fails(self, ykman_cli):
+    def test_import_verify_wrong_cert_fails(self, ckman_cli):
         # Set up a key in the slot and create a certificate for it
-        public_key_pem = ykman_cli(
+        public_key_pem = ckman_cli(
             "piv",
             "keys",
             "generate",
@@ -489,7 +489,7 @@ class TestKeyManagement:
             "-",
         ).output
 
-        ykman_cli(
+        ckman_cli(
             "piv",
             "certificates",
             "generate",
@@ -504,10 +504,10 @@ class TestKeyManagement:
             input=public_key_pem,
         )
 
-        cert_pem = ykman_cli("piv", "certificates", "export", "9a", "-").output
+        cert_pem = ckman_cli("piv", "certificates", "export", "9a", "-").output
 
         # Overwrite the key with a new one
-        ykman_cli(
+        ckman_cli(
             "piv",
             "keys",
             "generate",
@@ -521,7 +521,7 @@ class TestKeyManagement:
         )
 
         with pytest.raises(SystemExit):
-            ykman_cli(
+            ckman_cli(
                 "piv",
                 "certificates",
                 "import",
@@ -535,9 +535,9 @@ class TestKeyManagement:
                 input=cert_pem,
             )
 
-    def test_import_no_verify_wrong_cert_succeeds(self, ykman_cli):
+    def test_import_no_verify_wrong_cert_succeeds(self, ckman_cli):
         # Set up a key in the slot and create a certificate for it
-        public_key_pem = ykman_cli(
+        public_key_pem = ckman_cli(
             "piv",
             "keys",
             "generate",
@@ -549,7 +549,7 @@ class TestKeyManagement:
             "-",
         ).output
 
-        ykman_cli(
+        ckman_cli(
             "piv",
             "certificates",
             "generate",
@@ -564,10 +564,10 @@ class TestKeyManagement:
             input=public_key_pem,
         )
 
-        cert_pem = ykman_cli("piv", "certificates", "export", "9a", "-").output
+        cert_pem = ckman_cli("piv", "certificates", "export", "9a", "-").output
 
         # Overwrite the key with a new one
-        ykman_cli(
+        ckman_cli(
             "piv",
             "keys",
             "generate",
@@ -581,7 +581,7 @@ class TestKeyManagement:
         )
 
         with pytest.raises(SystemExit):
-            ykman_cli(
+            ckman_cli(
                 "piv",
                 "certificates",
                 "import",
@@ -595,7 +595,7 @@ class TestKeyManagement:
                 input=cert_pem,
             )
 
-        ykman_cli(
+        ckman_cli(
             "piv",
             "certificates",
             "import",
@@ -609,6 +609,6 @@ class TestKeyManagement:
         )
 
     @condition.min_version(4, 3)
-    def test_export_attestation_certificate(self, ykman_cli):
-        output = ykman_cli("piv", "certificates", "export", "f9", "-").output
+    def test_export_attestation_certificate(self, ckman_cli):
+        output = ckman_cli("piv", "certificates", "export", "f9", "-").output
         assert "BEGIN CERTIFICATE" in output

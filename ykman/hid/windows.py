@@ -16,8 +16,8 @@
 # This file, with modifications, is licensed under the above Apache License.
 
 from .base import OtpYubiKeyDevice, YUBICO_VID, USAGE_OTP
-from yubikit.core.otp import OtpConnection
-from yubikit.logging import LOG_LEVEL
+from canokit.core.otp import OtpConnection
+from canokit.logging import LOG_LEVEL
 
 from ctypes import wintypes, LibraryLoader
 from typing import Dict, cast

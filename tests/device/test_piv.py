@@ -8,10 +8,10 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa, ec, padding, ed25519, x25519
 
-from yubikit.core import NotSupportedError
-from yubikit.core.smartcard import AID, ApduError
-from yubikit.management import CAPABILITY
-from yubikit.piv import (
+from canokit.core import NotSupportedError
+from canokit.core.smartcard import AID, ApduError
+from canokit.management import CAPABILITY
+from canokit.piv import (
     PivSession,
     ALGORITHM,
     KEY_TYPE,
@@ -23,7 +23,7 @@ from yubikit.piv import (
     InvalidPinError,
     check_key_support,
 )
-from ykman.piv import (
+from ckman.piv import (
     check_key,
     get_pivman_data,
     get_pivman_protected_data,
@@ -31,7 +31,7 @@ from ykman.piv import (
     generate_csr,
     pivman_set_mgm_key,
 )
-from ykman.util import parse_certificates, parse_private_key
+from ckman.util import parse_certificates, parse_private_key
 from ..util import open_file
 from . import condition
 

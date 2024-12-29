@@ -26,10 +26,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from ..base import YkmanDevice
-from yubikit.core import TRANSPORT, YUBIKEY, PID
-from yubikit.core.smartcard import SmartCardConnection
-from yubikit.management import USB_INTERFACE
-from yubikit.logging import LOG_LEVEL
+from canokit.core import TRANSPORT, YUBIKEY, PID
+from canokit.core.smartcard import SmartCardConnection
+from canokit.management import USB_INTERFACE
+from canokit.logging import LOG_LEVEL
 
 from smartcard import System
 from smartcard.Exceptions import CardConnectionException

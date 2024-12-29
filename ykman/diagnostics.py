@@ -1,4 +1,4 @@
-from . import __version__ as ykman_version
+from . import __version__ as ckman_version
 from .util import get_windows_version
 from .pcsc import list_readers, list_devices as list_ccid_devices
 from .hid import list_otp_devices, list_ctap_devices
@@ -6,17 +6,17 @@ from .piv import get_piv_info
 from .openpgp import get_openpgp_info
 from .hsmauth import get_hsmauth_info
 
-from yubikit.core import Tlv
-from yubikit.core.smartcard import SmartCardConnection
-from yubikit.core.fido import FidoConnection
-from yubikit.core.otp import OtpConnection
-from yubikit.management import ManagementSession
-from yubikit.yubiotp import YubiOtpSession
-from yubikit.piv import PivSession
-from yubikit.oath import OathSession
-from yubikit.openpgp import OpenPgpSession
-from yubikit.hsmauth import HsmAuthSession
-from yubikit.support import read_info, get_name
+from canokit.core import Tlv
+from canokit.core.smartcard import SmartCardConnection
+from canokit.core.fido import FidoConnection
+from canokit.core.otp import OtpConnection
+from canokit.management import ManagementSession
+from canokit.yubiotp import YubiOtpSession
+from canokit.piv import PivSession
+from canokit.oath import OathSession
+from canokit.openpgp import OpenPgpSession
+from canokit.hsmauth import HsmAuthSession
+from canokit.support import read_info, get_name
 from fido2.ctap import CtapError
 from fido2.ctap2 import Ctap2, ClientPin
 
@@ -31,7 +31,7 @@ import os
 
 def sys_info():
     info: Dict[str, Any] = {
-        "ykman": ykman_version,
+        "ckman": ckman_version,
         "Python": sys.version,
         "Platform": sys.platform,
         "Arch": platform.machine(),

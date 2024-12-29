@@ -1,19 +1,19 @@
 #  vim: set fileencoding=utf-8 :
 
-from ykman import __version__ as version
-from yubikit.core import Tlv, bytes2int, InvalidPinError
-from yubikit.core.otp import modhex_encode, modhex_decode
-from yubikit.management import FORM_FACTOR
-from ykman.util import is_pkcs12, is_pem, parse_private_key, parse_certificates
-from ykman.util import _parse_pkcs12
-from ykman.otp import format_oath_code, generate_static_pw, time_challenge
+from ckman import __version__ as version
+from canokit.core import Tlv, bytes2int, InvalidPinError
+from canokit.core.otp import modhex_encode, modhex_decode
+from canokit.management import FORM_FACTOR
+from ckman.util import is_pkcs12, is_pem, parse_private_key, parse_certificates
+from ckman.util import _parse_pkcs12
+from ckman.otp import format_oath_code, generate_static_pw, time_challenge
 from .util import open_file
 
 import unittest
 
 
 def test_invalid_pin_exception_value_error():
-    # Fail if InvalidPinError still inherits ValueError in ykman 6.0
+    # Fail if InvalidPinError still inherits ValueError in ckman 6.0
     if int(version.split(".")[0]) != 5:
         assert not isinstance(InvalidPinError(3), ValueError)
 

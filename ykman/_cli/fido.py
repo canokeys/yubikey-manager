@@ -36,9 +36,9 @@ from fido2.ctap2 import (
     Config,
 )
 from fido2.pcsc import CtapPcscDevice
-from yubikit.management import CAPABILITY
-from yubikit.core.fido import FidoConnection
-from yubikit.core.smartcard import SW
+from canokit.management import CAPABILITY
+from canokit.core.fido import FidoConnection
+from canokit.core.smartcard import SW
 from time import sleep
 from .util import (
     click_postpone_execution,
@@ -75,11 +75,11 @@ def fido(ctx):
 
     \b
       Reset the FIDO (FIDO2 and U2F) applications:
-      $ ykman fido reset
+      $ ckman fido reset
 
     \b
       Change the FIDO2 PIN from 123456 to 654321:
-      $ ykman fido access change-pin --pin 123456 --new-pin 654321
+      $ ckman fido access change-pin --pin 123456 --new-pin 654321
 
     """
     dev = ctx.obj["device"]
@@ -173,7 +173,7 @@ def reset(ctx, force):
     if CAPABILITY.FIDO2 in info.reset_blocked:
         raise CliFail(
             "Cannot perform FIDO reset when PIV is configured, "
-            "use 'ykman config reset' for full factory reset."
+            "use 'ckman config reset' for full factory reset."
         )
 
     conn = ctx.obj["conn"]
@@ -451,7 +451,7 @@ def verify(ctx, pin):
         try:
             # Get a PIN token to verify the PIN.
             client_pin.get_pin_token(
-                pin, ClientPin.PERMISSION.GET_ASSERTION, "ykman.example.com"
+                pin, ClientPin.PERMISSION.GET_ASSERTION, "ckman.example.com"
             )
         except CtapError as e:
             raise CliFail(f"PIN verification failed: {e}")
@@ -598,11 +598,11 @@ def creds():
 
     \b
       List credentials (providing PIN via argument):
-      $ ykman fido credentials list --pin 123456
+      $ ckman fido credentials list --pin 123456
 
     \b
       Delete a credential (ID shown in "list" output, PIN will be prompted for):
-      $ ykman fido credentials delete da7fdc
+      $ ckman fido credentials delete da7fdc
     """
 
 
@@ -716,15 +716,15 @@ def bio():
 
     \b
       Register a new fingerprint (providing PIN via argument):
-      $ ykman fido fingerprints add "Left thumb" --pin 123456
+      $ ckman fido fingerprints add "Left thumb" --pin 123456
 
     \b
       List already stored fingerprints (providing PIN via argument):
-      $ ykman fido fingerprints list --pin 123456
+      $ ckman fido fingerprints list --pin 123456
 
     \b
       Delete a stored fingerprint with ID "f691" (PIN will be prompted for):
-      $ ykman fido fingerprints delete f691
+      $ ckman fido fingerprints delete f691
 
     """
 

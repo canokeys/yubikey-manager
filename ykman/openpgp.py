@@ -25,7 +25,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from yubikit.openpgp import OpenPgpSession, KEY_REF, KdfNone
+from canokit.openpgp import OpenPgpSession, KEY_REF, KdfNone
 
 
 def get_openpgp_info(session: OpenPgpSession):

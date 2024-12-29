@@ -36,15 +36,15 @@ Install via poetry:
 
 Show available commands:
 
-    $ poetry run ykman --help
+    $ poetry run ckman --help
 
 Show information about inserted YubiKey:
 
-    $ poetry run ykman info
+    $ poetry run ckman info
 
-Run ykman in DEBUG mode:
+Run ckman in DEBUG mode:
 
-    $ poetry run ykman --log-level DEBUG info
+    $ poetry run ckman --log-level DEBUG info
 
 === Code Style & Security
 
@@ -71,7 +71,7 @@ To run unit tests:
 WARNING: ONLY run these on dedicated developer keys, as it will permanently
 delete data on the device(s)!
 
-To run integration tests, indicate the serial number (given by `ykman list`) of
+To run integration tests, indicate the serial number (given by `ckman list`) of
 the YubiKey to test with.  Make sure no other YubiKey is connected when running
 the test!
 

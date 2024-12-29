@@ -1,4 +1,4 @@
-yubikit package
+canokit package
 ===============
 
 Subpackages
@@ -7,71 +7,71 @@ Subpackages
 .. toctree::
    :maxdepth: 1
 
-   yubikit.core
+   canokit.core
 
 Submodules
 ----------
 
-yubikit.hsmauth module
+canokit.hsmauth module
 ----------------------
 
-.. automodule:: yubikit.hsmauth
+.. automodule:: canokit.hsmauth
    :members:
    :undoc-members:
    :show-inheritance:
 
-yubikit.logging module
+canokit.logging module
 ----------------------
 
-.. automodule:: yubikit.logging
+.. automodule:: canokit.logging
    :members:
    :undoc-members:
    :show-inheritance:
 
-yubikit.management module
+canokit.management module
 -------------------------
 
-.. automodule:: yubikit.management
+.. automodule:: canokit.management
    :members:
    :undoc-members:
    :show-inheritance:
 
-yubikit.oath module
+canokit.oath module
 -------------------
 
-.. automodule:: yubikit.oath
+.. automodule:: canokit.oath
    :members:
    :undoc-members:
    :show-inheritance:
 
-yubikit.openpgp module
+canokit.openpgp module
 ----------------------
 
-.. automodule:: yubikit.openpgp
+.. automodule:: canokit.openpgp
    :members:
    :undoc-members:
    :show-inheritance:
 
-yubikit.piv module
+canokit.piv module
 ------------------
 
-.. automodule:: yubikit.piv
+.. automodule:: canokit.piv
    :members:
    :undoc-members:
    :show-inheritance:
 
-yubikit.support module
+canokit.support module
 ----------------------
 
-.. automodule:: yubikit.support
+.. automodule:: canokit.support
    :members:
    :undoc-members:
    :show-inheritance:
 
-yubikit.yubiotp module
+canokit.yubiotp module
 ----------------------
 
-.. automodule:: yubikit.yubiotp
+.. automodule:: canokit.yubiotp
    :members:
    :undoc-members:
    :show-inheritance:
@@ -79,7 +79,7 @@ yubikit.yubiotp module
 Module contents
 ---------------
 
-.. automodule:: yubikit
+.. automodule:: canokit
    :members:
    :undoc-members:
    :show-inheritance:

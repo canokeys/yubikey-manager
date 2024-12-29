@@ -32,10 +32,10 @@ from pathlib import Path
 from cryptography.fernet import Fernet, InvalidToken
 
 
-XDG_DATA_HOME = os.environ.get("XDG_DATA_HOME", "~/.local/share") + "/ykman"
-XDG_CONFIG_HOME = os.environ.get("XDG_CONFIG_HOME", "~/.config") + "/ykman"
+XDG_DATA_HOME = os.environ.get("XDG_DATA_HOME", "~/.local/share") + "/ckman"
+XDG_CONFIG_HOME = os.environ.get("XDG_CONFIG_HOME", "~/.config") + "/ckman"
 
-KEYRING_SERVICE = os.environ.get("YKMAN_KEYRING_SERVICE", "ykman")
+KEYRING_SERVICE = os.environ.get("YKMAN_KEYRING_SERVICE", "ckman")
 KEYRING_KEY = os.environ.get("YKMAN_KEYRING_KEY", "wrap_key")
 
 

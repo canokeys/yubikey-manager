@@ -25,7 +25,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from yubikit.core import TRANSPORT, PID, YubiKeyDevice
+from canokit.core import TRANSPORT, PID, YubiKeyDevice
 from typing import Optional, Hashable
 
 

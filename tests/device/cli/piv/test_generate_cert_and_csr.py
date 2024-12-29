@@ -33,8 +33,8 @@ def not_roca(version):
 
 class TestNonDefaultMgmKey:
     @pytest.fixture(autouse=True)
-    def set_mgmt_key(self, ykman_cli):
-        ykman_cli(
+    def set_mgmt_key(self, ckman_cli):
+        ckman_cli(
             "piv",
             "access",
             "change-management-key",
@@ -46,8 +46,8 @@ class TestNonDefaultMgmKey:
             NON_DEFAULT_MANAGEMENT_KEY,
         )
 
-    def _test_generate_self_signed(self, ykman_cli, slot, algo):
-        pubkey_output = ykman_cli(
+    def _test_generate_self_signed(self, ckman_cli, slot, algo):
+        pubkey_output = ckman_cli(
             "piv",
             "keys",
             "generate",
@@ -58,7 +58,7 @@ class TestNonDefaultMgmKey:
             NON_DEFAULT_MANAGEMENT_KEY,
             "-",
         ).output
-        ykman_cli(
+        ckman_cli(
             "piv",
             "certificates",
             "generate",
@@ -72,49 +72,49 @@ class TestNonDefaultMgmKey:
             "-",
             input=pubkey_output,
         )
-        output = ykman_cli("piv", "certificates", "export", slot, "-").output
+        output = ckman_cli("piv", "certificates", "export", slot, "-").output
         cert = x509.load_pem_x509_certificate(output.encode(), default_backend())
         _verify_cert(cert, cert.public_key())
         fingerprint = b2a_hex(cert.fingerprint(hashes.SHA256())).decode("ascii")
 
-        output = ykman_cli("piv", "info").output
+        output = ckman_cli("piv", "info").output
         assert fingerprint in output
 
     @condition.yk4_fips(False)
     @condition.check(not_roca)
-    def test_generate_self_signed_slot_9a_rsa1024(self, ykman_cli):
-        self._test_generate_self_signed(ykman_cli, "9a", "RSA1024")
+    def test_generate_self_signed_slot_9a_rsa1024(self, ckman_cli):
+        self._test_generate_self_signed(ckman_cli, "9a", "RSA1024")
 
-    def test_generate_self_signed_slot_9a_eccp256(self, ykman_cli):
-        self._test_generate_self_signed(ykman_cli, "9a", "ECCP256")
-
-    @condition.yk4_fips(False)
-    @condition.check(not_roca)
-    def test_generate_self_signed_slot_9c_rsa1024(self, ykman_cli):
-        self._test_generate_self_signed(ykman_cli, "9c", "RSA1024")
-
-    def test_generate_self_signed_slot_9c_eccp256(self, ykman_cli):
-        self._test_generate_self_signed(ykman_cli, "9c", "ECCP256")
+    def test_generate_self_signed_slot_9a_eccp256(self, ckman_cli):
+        self._test_generate_self_signed(ckman_cli, "9a", "ECCP256")
 
     @condition.yk4_fips(False)
     @condition.check(not_roca)
-    def test_generate_self_signed_slot_9d_rsa1024(self, ykman_cli):
-        self._test_generate_self_signed(ykman_cli, "9d", "RSA1024")
+    def test_generate_self_signed_slot_9c_rsa1024(self, ckman_cli):
+        self._test_generate_self_signed(ckman_cli, "9c", "RSA1024")
 
-    def test_generate_self_signed_slot_9d_eccp256(self, ykman_cli):
-        self._test_generate_self_signed(ykman_cli, "9d", "ECCP256")
+    def test_generate_self_signed_slot_9c_eccp256(self, ckman_cli):
+        self._test_generate_self_signed(ckman_cli, "9c", "ECCP256")
 
     @condition.yk4_fips(False)
     @condition.check(not_roca)
-    def test_generate_self_signed_slot_9e_rsa1024(self, ykman_cli):
-        self._test_generate_self_signed(ykman_cli, "9e", "RSA1024")
+    def test_generate_self_signed_slot_9d_rsa1024(self, ckman_cli):
+        self._test_generate_self_signed(ckman_cli, "9d", "RSA1024")
 
-    def test_generate_self_signed_slot_9e_eccp256(self, ykman_cli):
-        self._test_generate_self_signed(ykman_cli, "9e", "ECCP256")
+    def test_generate_self_signed_slot_9d_eccp256(self, ckman_cli):
+        self._test_generate_self_signed(ckman_cli, "9d", "ECCP256")
 
-    def _test_generate_csr(self, ykman_cli, slot, algo):
+    @condition.yk4_fips(False)
+    @condition.check(not_roca)
+    def test_generate_self_signed_slot_9e_rsa1024(self, ckman_cli):
+        self._test_generate_self_signed(ckman_cli, "9e", "RSA1024")
+
+    def test_generate_self_signed_slot_9e_eccp256(self, ckman_cli):
+        self._test_generate_self_signed(ckman_cli, "9e", "ECCP256")
+
+    def _test_generate_csr(self, ckman_cli, slot, algo):
         subject_input = "subject-" + algo
-        pubkey_output = ykman_cli(
+        pubkey_output = ckman_cli(
             "piv",
             "keys",
             "generate",
@@ -125,7 +125,7 @@ class TestNonDefaultMgmKey:
             NON_DEFAULT_MANAGEMENT_KEY,
             "-",
         ).output
-        csr_output = ykman_cli(
+        csr_output = ckman_cli(
             "piv",
             "certificates",
             "request",
@@ -147,41 +147,41 @@ class TestNonDefaultMgmKey:
 
     @condition.yk4_fips(False)
     @condition.check(not_roca)
-    def test_generate_csr_slot_9a_rsa1024(self, ykman_cli):
-        self._test_generate_csr(ykman_cli, "9a", "RSA1024")
+    def test_generate_csr_slot_9a_rsa1024(self, ckman_cli):
+        self._test_generate_csr(ckman_cli, "9a", "RSA1024")
 
-    def test_generate_csr_slot_9a_eccp256(self, ykman_cli):
-        self._test_generate_csr(ykman_cli, "9a", "ECCP256")
-
-    @condition.yk4_fips(False)
-    @condition.check(not_roca)
-    def test_generate_csr_slot_9c_rsa1024(self, ykman_cli):
-        self._test_generate_csr(ykman_cli, "9c", "RSA1024")
-
-    def test_generate_csr_slot_9c_eccp256(self, ykman_cli):
-        self._test_generate_csr(ykman_cli, "9c", "ECCP256")
+    def test_generate_csr_slot_9a_eccp256(self, ckman_cli):
+        self._test_generate_csr(ckman_cli, "9a", "ECCP256")
 
     @condition.yk4_fips(False)
     @condition.check(not_roca)
-    def test_generate_csr_slot_9d_rsa1024(self, ykman_cli):
-        self._test_generate_csr(ykman_cli, "9d", "RSA1024")
+    def test_generate_csr_slot_9c_rsa1024(self, ckman_cli):
+        self._test_generate_csr(ckman_cli, "9c", "RSA1024")
 
-    def test_generate_csr_slot_9d_eccp256(self, ykman_cli):
-        self._test_generate_csr(ykman_cli, "9d", "ECCP256")
+    def test_generate_csr_slot_9c_eccp256(self, ckman_cli):
+        self._test_generate_csr(ckman_cli, "9c", "ECCP256")
 
     @condition.yk4_fips(False)
     @condition.check(not_roca)
-    def test_generate_csr_slot_9e_rsa1024(self, ykman_cli):
-        self._test_generate_csr(ykman_cli, "9e", "RSA1024")
+    def test_generate_csr_slot_9d_rsa1024(self, ckman_cli):
+        self._test_generate_csr(ckman_cli, "9d", "RSA1024")
 
-    def test_generate_csr_slot_9e_eccp256(self, ykman_cli):
-        self._test_generate_csr(ykman_cli, "9e", "ECCP256")
+    def test_generate_csr_slot_9d_eccp256(self, ckman_cli):
+        self._test_generate_csr(ckman_cli, "9d", "ECCP256")
+
+    @condition.yk4_fips(False)
+    @condition.check(not_roca)
+    def test_generate_csr_slot_9e_rsa1024(self, ckman_cli):
+        self._test_generate_csr(ckman_cli, "9e", "RSA1024")
+
+    def test_generate_csr_slot_9e_eccp256(self, ckman_cli):
+        self._test_generate_csr(ckman_cli, "9e", "ECCP256")
 
 
 class TestProtectedMgmKey:
     @pytest.fixture(autouse=True)
-    def protect_mgmt_key(self, ykman_cli):
-        ykman_cli(
+    def protect_mgmt_key(self, ckman_cli):
+        ckman_cli(
             "piv",
             "access",
             "change-management-key",
@@ -192,11 +192,11 @@ class TestProtectedMgmKey:
             DEFAULT_MANAGEMENT_KEY,
         )
 
-    def _test_generate_self_signed(self, ykman_cli, slot, algo):
-        pubkey_output = ykman_cli(
+    def _test_generate_self_signed(self, ckman_cli, slot, algo):
+        pubkey_output = ckman_cli(
             "piv", "keys", "generate", slot, "-a", algo, "-P", DEFAULT_PIN, "-"
         ).output
-        ykman_cli(
+        ckman_cli(
             "piv",
             "certificates",
             "generate",
@@ -208,52 +208,52 @@ class TestProtectedMgmKey:
             "-",
             input=pubkey_output,
         )
-        output = ykman_cli("piv", "certificates", "export", slot, "-").output
+        output = ckman_cli("piv", "certificates", "export", slot, "-").output
         cert = x509.load_pem_x509_certificate(output.encode(), default_backend())
         _verify_cert(cert, cert.public_key())
         fingerprint = b2a_hex(cert.fingerprint(hashes.SHA256())).decode("ascii")
 
-        output = ykman_cli("piv", "info").output
+        output = ckman_cli("piv", "info").output
         assert fingerprint in output
 
     @condition.yk4_fips(False)
     @condition.check(not_roca)
-    def test_generate_self_signed_slot_9a_rsa1024(self, ykman_cli):
-        self._test_generate_self_signed(ykman_cli, "9a", "RSA1024")
+    def test_generate_self_signed_slot_9a_rsa1024(self, ckman_cli):
+        self._test_generate_self_signed(ckman_cli, "9a", "RSA1024")
 
-    def test_generate_self_signed_slot_9a_eccp256(self, ykman_cli):
-        self._test_generate_self_signed(ykman_cli, "9a", "ECCP256")
-
-    @condition.yk4_fips(False)
-    @condition.check(not_roca)
-    def test_generate_self_signed_slot_9c_rsa1024(self, ykman_cli):
-        self._test_generate_self_signed(ykman_cli, "9c", "RSA1024")
-
-    def test_generate_self_signed_slot_9c_eccp256(self, ykman_cli):
-        self._test_generate_self_signed(ykman_cli, "9c", "ECCP256")
+    def test_generate_self_signed_slot_9a_eccp256(self, ckman_cli):
+        self._test_generate_self_signed(ckman_cli, "9a", "ECCP256")
 
     @condition.yk4_fips(False)
     @condition.check(not_roca)
-    def test_generate_self_signed_slot_9d_rsa1024(self, ykman_cli):
-        self._test_generate_self_signed(ykman_cli, "9d", "RSA1024")
+    def test_generate_self_signed_slot_9c_rsa1024(self, ckman_cli):
+        self._test_generate_self_signed(ckman_cli, "9c", "RSA1024")
 
-    def test_generate_self_signed_slot_9d_eccp256(self, ykman_cli):
-        self._test_generate_self_signed(ykman_cli, "9d", "ECCP256")
+    def test_generate_self_signed_slot_9c_eccp256(self, ckman_cli):
+        self._test_generate_self_signed(ckman_cli, "9c", "ECCP256")
 
     @condition.yk4_fips(False)
     @condition.check(not_roca)
-    def test_generate_self_signed_slot_9e_rsa1024(self, ykman_cli):
-        self._test_generate_self_signed(ykman_cli, "9e", "RSA1024")
+    def test_generate_self_signed_slot_9d_rsa1024(self, ckman_cli):
+        self._test_generate_self_signed(ckman_cli, "9d", "RSA1024")
 
-    def test_generate_self_signed_slot_9e_eccp256(self, ykman_cli):
-        self._test_generate_self_signed(ykman_cli, "9e", "ECCP256")
+    def test_generate_self_signed_slot_9d_eccp256(self, ckman_cli):
+        self._test_generate_self_signed(ckman_cli, "9d", "ECCP256")
 
-    def _test_generate_csr(self, ykman_cli, slot, algo):
+    @condition.yk4_fips(False)
+    @condition.check(not_roca)
+    def test_generate_self_signed_slot_9e_rsa1024(self, ckman_cli):
+        self._test_generate_self_signed(ckman_cli, "9e", "RSA1024")
+
+    def test_generate_self_signed_slot_9e_eccp256(self, ckman_cli):
+        self._test_generate_self_signed(ckman_cli, "9e", "ECCP256")
+
+    def _test_generate_csr(self, ckman_cli, slot, algo):
         subject_input = "subject-" + algo
-        pubkey_output = ykman_cli(
+        pubkey_output = ckman_cli(
             "piv", "keys", "generate", slot, "-a", algo, "-P", DEFAULT_PIN, "-"
         ).output
-        csr_output = ykman_cli(
+        csr_output = ckman_cli(
             "piv",
             "certificates",
             "request",
@@ -275,32 +275,32 @@ class TestProtectedMgmKey:
 
     @condition.yk4_fips(False)
     @condition.check(not_roca)
-    def test_generate_csr_slot_9a_rsa1024(self, ykman_cli):
-        self._test_generate_csr(ykman_cli, "9a", "RSA1024")
+    def test_generate_csr_slot_9a_rsa1024(self, ckman_cli):
+        self._test_generate_csr(ckman_cli, "9a", "RSA1024")
 
-    def test_generate_csr_slot_9a_eccp256(self, ykman_cli):
-        self._test_generate_csr(ykman_cli, "9a", "ECCP256")
-
-    @condition.yk4_fips(False)
-    @condition.check(not_roca)
-    def test_generate_csr_slot_9c_rsa1024(self, ykman_cli):
-        self._test_generate_csr(ykman_cli, "9c", "RSA1024")
-
-    def test_generate_csr_slot_9c_eccp256(self, ykman_cli):
-        self._test_generate_csr(ykman_cli, "9c", "ECCP256")
+    def test_generate_csr_slot_9a_eccp256(self, ckman_cli):
+        self._test_generate_csr(ckman_cli, "9a", "ECCP256")
 
     @condition.yk4_fips(False)
     @condition.check(not_roca)
-    def test_generate_csr_slot_9d_rsa1024(self, ykman_cli):
-        self._test_generate_csr(ykman_cli, "9d", "RSA1024")
+    def test_generate_csr_slot_9c_rsa1024(self, ckman_cli):
+        self._test_generate_csr(ckman_cli, "9c", "RSA1024")
 
-    def test_generate_csr_slot_9d_eccp256(self, ykman_cli):
-        self._test_generate_csr(ykman_cli, "9d", "ECCP256")
+    def test_generate_csr_slot_9c_eccp256(self, ckman_cli):
+        self._test_generate_csr(ckman_cli, "9c", "ECCP256")
 
     @condition.yk4_fips(False)
     @condition.check(not_roca)
-    def test_generate_csr_slot_9e_rsa1024(self, ykman_cli):
-        self._test_generate_csr(ykman_cli, "9e", "RSA1024")
+    def test_generate_csr_slot_9d_rsa1024(self, ckman_cli):
+        self._test_generate_csr(ckman_cli, "9d", "RSA1024")
 
-    def test_generate_csr_slot_9e_eccp256(self, ykman_cli):
-        self._test_generate_csr(ykman_cli, "9e", "ECCP256")
+    def test_generate_csr_slot_9d_eccp256(self, ckman_cli):
+        self._test_generate_csr(ckman_cli, "9d", "ECCP256")
+
+    @condition.yk4_fips(False)
+    @condition.check(not_roca)
+    def test_generate_csr_slot_9e_rsa1024(self, ckman_cli):
+        self._test_generate_csr(ckman_cli, "9e", "RSA1024")
+
+    def test_generate_csr_slot_9e_eccp256(self, ckman_cli):
+        self._test_generate_csr(ckman_cli, "9e", "ECCP256")

@@ -33,7 +33,7 @@ VSVersionInfo(
         StringStruct('FileDescription', 'YubiKey Manager CLI'),
         StringStruct('FileVersion', '{VERSION}'),
         StringStruct('LegalCopyright', 'Copyright (c) 2024 Yubico AB'),
-        StringStruct('OriginalFilename', 'ykman.exe'),
+        StringStruct('OriginalFilename', 'ckman.exe'),
         StringStruct('ProductName', 'YubiKey Manager'),
         StringStruct('ProductVersion', '{VERSION}')])
       ]),

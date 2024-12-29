@@ -1,7 +1,7 @@
 == Device Permissions on Linux
-When using ykman on Linux, you may find that the tool is sometimes unable to
+When using ckman on Linux, you may find that the tool is sometimes unable to
 access your YubiKey for some of the commands. This is often due to USB device
-permissions, and can be tested by running the same ykman command as
+permissions, and can be tested by running the same ckman command as
 root.
 
 The YubiKey is accessed in several different ways, depending on which command

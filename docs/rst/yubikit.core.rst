@@ -1,29 +1,29 @@
-yubikit.core package
+canokit.core package
 ====================
 
 Submodules
 ----------
 
-yubikit.core.fido module
+canokit.core.fido module
 ------------------------
 
-.. automodule:: yubikit.core.fido
+.. automodule:: canokit.core.fido
    :members:
    :undoc-members:
    :show-inheritance:
 
-yubikit.core.otp module
+canokit.core.otp module
 -----------------------
 
-.. automodule:: yubikit.core.otp
+.. automodule:: canokit.core.otp
    :members:
    :undoc-members:
    :show-inheritance:
 
-yubikit.core.smartcard module
+canokit.core.smartcard module
 -----------------------------
 
-.. automodule:: yubikit.core.smartcard
+.. automodule:: canokit.core.smartcard
    :members:
    :undoc-members:
    :show-inheritance:
@@ -31,7 +31,7 @@ yubikit.core.smartcard module
 Module contents
 ---------------
 
-.. automodule:: yubikit.core
+.. automodule:: canokit.core
    :members:
    :undoc-members:
    :show-inheritance:

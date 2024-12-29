@@ -53,7 +53,7 @@
 #     EOF
 #     reboot
 #
-from yubikit.core.otp import OtpConnection
+from canokit.core.otp import OtpConnection
 from .base import OtpYubiKeyDevice, YUBICO_VID, USAGE_OTP
 
 from ctypes.util import find_library

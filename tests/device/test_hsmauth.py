@@ -1,8 +1,8 @@
 import pytest
 
-from yubikit.core.smartcard import ApduError
-from yubikit.management import CAPABILITY
-from yubikit.hsmauth import (
+from canokit.core.smartcard import ApduError
+from canokit.management import CAPABILITY
+from canokit.hsmauth import (
     HsmAuthSession,
     Credential,
     INITIAL_RETRY_COUNTER,

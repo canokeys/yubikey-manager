@@ -25,12 +25,12 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from yubikit.core import ApplicationNotAvailableError
-from yubikit.core.otp import OtpConnection
-from yubikit.core.fido import FidoConnection
-from yubikit.core.smartcard import SmartCardConnection
-from yubikit.support import get_name, read_info
-from yubikit.logging import LOG_LEVEL
+from canokit.core import ApplicationNotAvailableError
+from canokit.core.otp import OtpConnection
+from canokit.core.fido import FidoConnection
+from canokit.core.smartcard import SmartCardConnection
+from canokit.support import get_name, read_info
+from canokit.logging import LOG_LEVEL
 
 from .. import __version__
 from ..pcsc import list_devices as list_ccid, list_readers
@@ -86,7 +86,7 @@ def _scan_changes(state, attempts=10):
 def print_version(ctx, param, value):
     if not value or ctx.resilient_parsing:
         return
-    click.echo(f"YubiKey Manager (ykman) version: {__version__}")
+    click.echo(f"YubiKey Manager (ckman) version: {__version__}")
     ctx.exit()
 
 
@@ -162,7 +162,7 @@ def require_device(connection_types, serial=None):
             raise CliFail(
                 f"Command requires one of the following USB interfaces "
                 f"to be enabled: '{req}'.\n\n"
-                "Use 'ykman config usb' to set the enabled USB interfaces."
+                "Use 'ckman config usb' to set the enabled USB interfaces."
             )
 
         devs = list_all_devices(supported)
@@ -263,11 +263,11 @@ def cli(ctx, device, log_level, log_file, reader):
 
     \b
       List connected YubiKeys, only output serial number:
-      $ ykman list --serials
+      $ ckman list --serials
 
     \b
       Show information about YubiKey with serial number 123456:
-      $ ykman --device 123456 info
+      $ ckman --device 123456 info
     """
     ctx.obj = YkmanContextObject()
 

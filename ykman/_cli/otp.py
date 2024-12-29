@@ -26,7 +26,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from base64 import b32encode
-from yubikit.yubiotp import (
+from canokit.yubiotp import (
     SLOT,
     NDEF_TYPE,
     YubiOtpSession,
@@ -36,14 +36,14 @@ from yubikit.yubiotp import (
     HotpSlotConfiguration,
     UpdateConfiguration,
 )
-from yubikit.core import TRANSPORT, CommandError
-from yubikit.core.otp import (
+from canokit.core import TRANSPORT, CommandError
+from canokit.core.otp import (
     MODHEX_ALPHABET,
     modhex_encode,
     modhex_decode,
     OtpConnection,
 )
-from yubikit.core.smartcard import SmartCardConnection
+from canokit.core.smartcard import SmartCardConnection
 
 from .util import (
     CliFail,
@@ -111,7 +111,7 @@ click_slot_argument = click.argument(
 
 _WRITE_FAIL_MSG = (
     "Failed to write to the YubiKey. Make sure the device does not "
-    'have restricted access (see "ykman otp --help" for more info).'
+    'have restricted access (see "ckman otp --help" for more info).'
 )
 
 
@@ -155,23 +155,23 @@ def otp(ctx, access_code):
 
     \b
       Swap the configurations between the two slots:
-      $ ykman otp swap
+      $ ckman otp swap
 
     \b
       Program a random challenge-response credential to slot 2:
-      $ ykman otp chalresp --generate 2
+      $ ckman otp chalresp --generate 2
 
     \b
       Program a Yubico OTP credential to slot 1, using the serial as public id:
-      $ ykman otp yubiotp 1 --serial-public-id
+      $ ckman otp yubiotp 1 --serial-public-id
 
     \b
       Program a random 38 characters long static password to slot 2:
-      $ ykman otp static --generate 2 --length 38
+      $ ckman otp static --generate 2 --length 38
 
     \b
       Remove a currently set access code from slot 2):
-      $ ykman otp --access-code 0123456789ab settings 2 --delete-access-code
+      $ ckman otp --access-code 0123456789ab settings 2 --delete-access-code
     """
 
     """
@@ -470,7 +470,7 @@ def yubiotp(
                 public_id,
                 private_id,
                 serial=info.serial,
-                user_agent="ykman/" + __version__,
+                user_agent="ckman/" + __version__,
             )
             click.echo("Upload to YubiCloud initiated successfully.")
             logger.info("Initiated YubiCloud upload")
@@ -887,7 +887,7 @@ def settings(
     if delete_access_code and not ctx.obj["access_code"]:
         raise CliFail(
             "--delete-access-code used without providing an access code "
-            '(see "ykman otp --help" for more info).'
+            '(see "ckman otp --help" for more info).'
         )
 
     if not session.get_config_state().is_configured(slot):

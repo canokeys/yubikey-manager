@@ -1,12 +1,12 @@
-from yubikit.core import TRANSPORT, YUBIKEY
-from yubikit.management import (
+from canokit.core import TRANSPORT, YUBIKEY
+from canokit.management import (
     CAPABILITY,
     FORM_FACTOR,
     DeviceInfo,
     DeviceConfig,
     Version,
 )
-from yubikit.support import get_name
+from canokit.support import get_name
 from typing import cast
 
 

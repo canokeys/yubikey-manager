@@ -27,7 +27,7 @@
 
 from ..base import YkmanDevice, PID
 from .base import OtpYubiKeyDevice
-from yubikit.core import TRANSPORT
+from canokit.core import TRANSPORT
 from typing import List, Callable
 import sys
 import logging

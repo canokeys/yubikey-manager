@@ -83,7 +83,7 @@ def run_script(ctx, site_dir, script, arguments, force):
 
     \b
       Run the file "myscript.py", passing arguments "123456" and "indata.csv":
-      $ ykman script myscript.py 123456 indata.csv
+      $ ckman script myscript.py 123456 indata.csv
 
     """
 

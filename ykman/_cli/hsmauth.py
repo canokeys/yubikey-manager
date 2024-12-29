@@ -25,15 +25,15 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from yubikit.core.smartcard import SmartCardConnection
-from yubikit.hsmauth import (
+from canokit.core.smartcard import SmartCardConnection
+from canokit.hsmauth import (
     HsmAuthSession,
     InvalidPinError,
     ALGORITHM,
     MANAGEMENT_KEY_LEN,
     DEFAULT_MANAGEMENT_KEY,
 )
-from yubikit.core.smartcard import ApduError, SW
+from canokit.core.smartcard import ApduError, SW
 
 from ..util import parse_private_key, InvalidPasswordError
 

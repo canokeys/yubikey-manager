@@ -1,5 +1,5 @@
-== Using ykman as a Python library
-In addition to using ykman as a standalone command line application, you can
+== Using ckman as a Python library
+In addition to using ckman as a standalone command line application, you can
 also use this project as a Python library for scripting purposes.
 
 === Setup
@@ -7,7 +7,7 @@ You will need to have Python >= 3.7, and have `yubikey-manager` installed and
 added to your PYTHON_PATH. You can verify that this is set up correctly by
 running the following command from a Terminal:
 
-    $ python -c "import ykman"
+    $ python -c "import ckman"
 
 If the above runs without error (no output at all), then you should be all set.
 
@@ -33,8 +33,8 @@ connections.
 ==== Example
 [source,py]
 ----
-from ykman.device import list_all_devices
-from yubikit.core.smartcard import SmartCardConnection
+from ckman.device import list_all_devices
+from canokit.core.smartcard import SmartCardConnection
 
 for device, info in list_all_devices():
     if info.version >= (5, 0, 0):  # The info object provides details about the YubiKey
@@ -56,9 +56,9 @@ using a Connection, you should close it. This can be done explicitly by calling
 ==== Example
 [source,py]
 ----
-from ykman.device import list_all_devices
-from yubikit.core.smartcard import SmartCardConnection
-from yubikit.piv import PivSession
+from ckman.device import list_all_devices
+from canokit.core.smartcard import SmartCardConnection
+from canokit.piv import PivSession
 
 # Select a connected YubiKeyDevice
 dev, info = list_all_devices()[0]
@@ -84,8 +84,8 @@ connected YubiKeys changes.
 ==== Example
 [source,py]
 ----
-from ykman.device import list_all_devices, scan_devices
-from yubikit.core.smartcard import SmartCardConnection
+from ckman.device import list_all_devices, scan_devices
+from canokit.core.smartcard import SmartCardConnection
 from time import sleep
 
 handled_serials = set()  # Keep track of YubiKeys we've already handled.

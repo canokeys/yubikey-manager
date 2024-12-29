@@ -1,9 +1,9 @@
-from ykman.device import list_all_devices, read_info
-from ykman.pcsc import list_devices
-from yubikit.core import TRANSPORT, Version
-from yubikit.core.otp import OtpConnection
-from yubikit.core.fido import FidoConnection
-from yubikit.core.smartcard import SmartCardConnection
+from ckman.device import list_all_devices, read_info
+from ckman.pcsc import list_devices
+from canokit.core import TRANSPORT, Version
+from canokit.core.otp import OtpConnection
+from canokit.core.fido import FidoConnection
+from canokit.core.smartcard import SmartCardConnection
 from functools import partial
 from . import condition
 

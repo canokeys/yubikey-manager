@@ -1,4 +1,4 @@
-from yubikit.management import CAPABILITY
+from canokit.management import CAPABILITY
 from .. import condition
 import pytest
 
@@ -14,37 +14,37 @@ def old_new_new(old, new):
 
 @pytest.fixture(autouse=True)
 @condition.capability(CAPABILITY.OPENPGP)
-def preconditions(ykman_cli):
-    ykman_cli("openpgp", "reset", "-f")
+def preconditions(ckman_cli):
+    ckman_cli("openpgp", "reset", "-f")
 
 
 class TestOpenPGP:
-    def test_openpgp_info(self, ykman_cli):
-        output = ykman_cli("openpgp", "info").output
+    def test_openpgp_info(self, ckman_cli):
+        output = ckman_cli("openpgp", "info").output
         assert "OpenPGP version:" in output
 
-    def test_openpgp_reset(self, ykman_cli):
-        output = ykman_cli("openpgp", "reset", "-f").output
+    def test_openpgp_reset(self, ckman_cli):
+        output = ckman_cli("openpgp", "reset", "-f").output
         assert "Success! All data has been cleared and default PINs are set." in output
 
 
 class TestPin:
-    def test_change_pin(self, ykman_cli):
-        ykman_cli(
+    def test_change_pin(self, ckman_cli):
+        ckman_cli(
             "openpgp", "access", "change-pin", "-P", DEFAULT_PIN, "-n", NON_DEFAULT_PIN
         )
-        ykman_cli(
+        ckman_cli(
             "openpgp", "access", "change-pin", "-P", NON_DEFAULT_PIN, "-n", DEFAULT_PIN
         )
 
-    def test_change_pin_prompt(self, ykman_cli):
-        ykman_cli(
+    def test_change_pin_prompt(self, ckman_cli):
+        ckman_cli(
             "openpgp",
             "access",
             "change-pin",
             input=old_new_new(DEFAULT_PIN, NON_DEFAULT_PIN),
         )
-        ykman_cli(
+        ckman_cli(
             "openpgp",
             "access",
             "change-pin",
@@ -53,8 +53,8 @@ class TestPin:
 
 
 class TestAdminPin:
-    def test_change_admin_pin(self, ykman_cli):
-        ykman_cli(
+    def test_change_admin_pin(self, ckman_cli):
+        ckman_cli(
             "openpgp",
             "access",
             "change-admin-pin",
@@ -63,7 +63,7 @@ class TestAdminPin:
             "-n",
             NON_DEFAULT_ADMIN_PIN,
         )
-        ykman_cli(
+        ckman_cli(
             "openpgp",
             "access",
             "change-admin-pin",
@@ -73,14 +73,14 @@ class TestAdminPin:
             DEFAULT_ADMIN_PIN,
         )
 
-    def test_change_pin_prompt(self, ykman_cli):
-        ykman_cli(
+    def test_change_pin_prompt(self, ckman_cli):
+        ckman_cli(
             "openpgp",
             "access",
             "change-admin-pin",
             input=old_new_new(DEFAULT_ADMIN_PIN, NON_DEFAULT_ADMIN_PIN),
         )
-        ykman_cli(
+        ckman_cli(
             "openpgp",
             "access",
             "change-admin-pin",
@@ -89,15 +89,15 @@ class TestAdminPin:
 
 
 class TestResetPin:
-    def ensure_pin_changed(self, ykman_cli):
-        ykman_cli(
+    def ensure_pin_changed(self, ckman_cli):
+        ckman_cli(
             "openpgp", "access", "change-pin", "-P", NON_DEFAULT_PIN, "-n", DEFAULT_PIN
         )
 
-    def test_set_and_use_reset_code(self, ykman_cli):
+    def test_set_and_use_reset_code(self, ckman_cli):
         reset_code = "12345678"
 
-        ykman_cli(
+        ckman_cli(
             "openpgp",
             "access",
             "change-reset-code",
@@ -107,7 +107,7 @@ class TestResetPin:
             reset_code,
         )
 
-        ykman_cli(
+        ckman_cli(
             "openpgp",
             "access",
             "unblock-pin",
@@ -117,31 +117,31 @@ class TestResetPin:
             NON_DEFAULT_PIN,
         )
 
-        self.ensure_pin_changed(ykman_cli)
+        self.ensure_pin_changed(ckman_cli)
 
-    def test_set_and_use_reset_code_prompt(self, ykman_cli):
+    def test_set_and_use_reset_code_prompt(self, ckman_cli):
         reset_code = "87654321"
 
-        ykman_cli(
+        ckman_cli(
             "openpgp",
             "access",
             "change-reset-code",
             input=old_new_new(DEFAULT_ADMIN_PIN, reset_code),
         )
 
-        ykman_cli(
+        ckman_cli(
             "openpgp",
             "access",
             "unblock-pin",
             input=old_new_new(reset_code, NON_DEFAULT_PIN),
         )
 
-        ykman_cli(
+        ckman_cli(
             "openpgp", "access", "change-pin", "-P", NON_DEFAULT_PIN, "-n", DEFAULT_PIN
         )
 
-    def test_unblock_pin_with_admin_pin(self, ykman_cli):
-        ykman_cli(
+    def test_unblock_pin_with_admin_pin(self, ckman_cli):
+        ckman_cli(
             "openpgp",
             "access",
             "unblock-pin",
@@ -151,10 +151,10 @@ class TestResetPin:
             NON_DEFAULT_PIN,
         )
 
-        self.ensure_pin_changed(ykman_cli)
+        self.ensure_pin_changed(ckman_cli)
 
-    def test_unblock_pin_with_admin_pin_prompt(self, ykman_cli):
-        ykman_cli(
+    def test_unblock_pin_with_admin_pin_prompt(self, ckman_cli):
+        ckman_cli(
             "openpgp",
             "access",
             "unblock-pin",
@@ -163,12 +163,12 @@ class TestResetPin:
             input=old_new_new(DEFAULT_ADMIN_PIN, NON_DEFAULT_PIN),
         )
 
-        self.ensure_pin_changed(ykman_cli)
+        self.ensure_pin_changed(ckman_cli)
 
 
 class TestForceSignature:
-    def test_set_force_sig(self, ykman_cli):
-        ykman_cli(
+    def test_set_force_sig(self, ckman_cli):
+        ckman_cli(
             "openpgp",
             "access",
             "set-signature-policy",
@@ -177,18 +177,18 @@ class TestForceSignature:
             DEFAULT_ADMIN_PIN,
         )
 
-        output = ykman_cli("openpgp", "info").output
+        output = ckman_cli("openpgp", "info").output
         assert "Always" in output
 
-        ykman_cli(
+        ckman_cli(
             "openpgp", "access", "set-signature-policy", "ONCE", "-a", DEFAULT_ADMIN_PIN
         )
 
-        output = ykman_cli("openpgp", "info").output
+        output = ckman_cli("openpgp", "info").output
         assert "Once" in output
 
-    def test_set_force_sig_prompt(self, ykman_cli):
-        ykman_cli(
+    def test_set_force_sig_prompt(self, ckman_cli):
+        ckman_cli(
             "openpgp",
             "access",
             "set-signature-policy",
@@ -196,10 +196,10 @@ class TestForceSignature:
             input=DEFAULT_ADMIN_PIN,
         )
 
-        output = ykman_cli("openpgp", "info").output
+        output = ckman_cli("openpgp", "info").output
         assert "Always" in output
 
-        ykman_cli(
+        ckman_cli(
             "openpgp",
             "access",
             "set-signature-policy",
@@ -207,5 +207,5 @@ class TestForceSignature:
             input=DEFAULT_ADMIN_PIN,
         )
 
-        output = ykman_cli("openpgp", "info").output
+        output = ckman_cli("openpgp", "info").output
         assert "Once" in output

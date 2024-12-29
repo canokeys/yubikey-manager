@@ -125,7 +125,7 @@ def apply_aliases(argv):
             if f:
                 argv = f(argv, alias, i)
                 logger.exception(
-                    "This command has moved! Use ykman " + " ".join(argv[1:])
+                    "This command has moved! Use ckman " + " ".join(argv[1:])
                 )
                 sys.exit(1)
             break  # Only handle first match

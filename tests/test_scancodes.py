@@ -30,7 +30,7 @@
 from __future__ import unicode_literals
 
 import unittest
-from ykman.scancodes import encode, KEYBOARD_LAYOUT
+from ckman.scancodes import encode, KEYBOARD_LAYOUT
 
 
 class TestScanMap(unittest.TestCase):

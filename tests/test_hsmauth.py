@@ -1,6 +1,6 @@
-from ykman.hsmauth import generate_random_management_key
+from ckman.hsmauth import generate_random_management_key
 
-from yubikit.hsmauth import (
+from canokit.hsmauth import (
     _parse_credential_password,
     _parse_label,
     _password_to_key,

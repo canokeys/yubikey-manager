@@ -40,8 +40,8 @@ from .util import (
     EnumChoice,
     is_yk4_fips,
 )
-from yubikit.core.smartcard import ApduError, SW, SmartCardConnection
-from yubikit.oath import (
+from canokit.core.smartcard import ApduError, SW, SmartCardConnection
+from canokit.oath import (
     OathSession,
     CredentialData,
     OATH_TYPE,
@@ -67,16 +67,16 @@ def oath(ctx):
 
     \b
       Generate codes for accounts starting with 'yubi':
-      $ ykman oath accounts code yubi
+      $ ckman oath accounts code yubi
 
     \b
       Add an account with the secret key f5up4ub3dw and the name yubico,
       which requires touch:
-      $ ykman oath accounts add yubico f5up4ub3dw --touch
+      $ ckman oath accounts add yubico f5up4ub3dw --touch
 
     \b
       Set a password for the OATH application:
-      $ ykman oath access change
+      $ ckman oath access change
     """
 
     dev = ctx.obj["device"]
@@ -99,7 +99,7 @@ def info(ctx):
 
     keys = ctx.obj["oath_keys"]
     if session.locked and session.device_id in keys:
-        click.echo("The password for this YubiKey is remembered by ykman.")
+        click.echo("The password for this YubiKey is remembered by ckman.")
 
     if is_yk4_fips(ctx.obj["info"]):
         click.echo(f"FIPS Approved Mode: {'Yes' if session.locked else 'No'}")

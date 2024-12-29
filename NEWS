@@ -32,7 +32,7 @@
 
 * Version 5.1.1 (released 2023-04-27)
  ** Bugfix: PIV: string representation of SLOT caused infinite loop on Python <3.11.
- ** Bugfix: Fix errors in 'ykman config nfc' on YubiKeys without NFC capability.
+ ** Bugfix: Fix errors in 'ckman config nfc' on YubiKeys without NFC capability.
  ** Bugfix: Fix error message shown when invalid modhex input length given for YubiOTP.
 
 * Version 5.1.0 (released 2023-04-17)
@@ -52,11 +52,11 @@
 * Version 5.0.0 (released 2022-10-19)
  ** Various cleanups and improvements to the API.
  ** Improvements to the handling of YubiKeys and connections.
- ** Command aliases for ykman 3.x (introduced in ykman 4.0) have now been dropped.
- ** Installers for ykman are now provided for Windows (amd64) and MacOS (universal2).
+ ** Command aliases for ckman 3.x (introduced in ckman 4.0) have now been dropped.
+ ** Installers for ckman are now provided for Windows (amd64) and MacOS (universal2).
  ** Logging has been improved, and a new TRAFFIC level has been introduced.
  ** The codebase has been improved for scripting usage, either directly as a Python
-    module, or via the new "ykman script" command.
+    module, or via the new "ckman script" command.
     See doc/Scripting.adoc, doc/Library_Usage.adoc, and examples/ for more details.
  ** PIV: Add support for dotted-string OIDs when parsing RFC4514 strings.
  ** PIV: Drop support for signing certificates and CSRs with SHA-1.
@@ -116,12 +116,12 @@
  ** Drop support for Python < 3.6.
  ** Drop reliance on libusb and libykpersonalize.
  ** Support the "fido" and "otp" subcommands over NFC (using the --reader flag)
- ** New "ykman --diagnose" command to aid in troubleshooting.
- ** New "ykman apdu" command for sending raw APDUs over the smart card interface.
+ ** New "ckman --diagnose" command to aid in troubleshooting.
+ ** New "ckman apdu" command for sending raw APDUs over the smart card interface.
  ** Restructuring of subcommands, with aliases for old versions (to be removed
     in a future release).
  ** Major changes to the underlying "library" code:
-  *** New "yubikit" package added for custom development and advanced scripting.
+  *** New "canokit" package added for custom development and advanced scripting.
   *** Type hints added for a large part of the "public" API.
  ** OpenPGP: Add support for KDF enabled YubiKeys.
  ** Static password: Add support for FR, IT, UK and BEPO keyboard layouts.
@@ -164,7 +164,7 @@
  ** Bugfix: Password was always prompted in OATH command, even if sent as argument
 
 * Version 2.1.0 (released 2019-03-11)
- ** Add --reader flag to ykman list, to list available smart card readers
+ ** Add --reader flag to ckman list, to list available smart card readers
  ** FIPS: Checking if a YubiKey FIPS is in FIPS mode is now opt-in, with the --check-fips flag
  ** PIV: Add commands for writing and reading arbitrary PIV objects
  ** PIV: Verify that the PIN must be between 6 - 8 characters long
@@ -173,7 +173,7 @@
  ** PIV: The piv info command now shows the full Distinguished Name (DN) of the certificate subject and issuer, if possible
  ** PIV: Malformed certificates are now handled better
  ** OpenPGP: The openpgp touch command now shows current touch policies
- ** The ykman usb/nfc config command now accepts openpgp as well as opgp as an argument
+ ** The ckman usb/nfc config command now accepts openpgp as well as opgp as an argument
  ** Bugfix: Fix support for german (DE) keyboard layout for static passwords
 
 * Version 2.0.0 (released 2019-01-09)
@@ -185,10 +185,10 @@
  ** PIV: Optionally validate that private key and certificate match when importing a certificate (on by default in CLI)
  ** PIV: Improve support for importing certificate chains and .PEM files with comments
  ** Breaking API changes:
-  *** Merge CCID status word constants into a single SW enum in ykman.driver_ccid
+  *** Merge CCID status word constants into a single SW enum in ckman.driver_ccid
   *** Throw custom exception types instead of raw APDUErrors from many methods of PivController
   *** Write CLI prompts to standard error instead of standard output
-  *** Replace function `ykman.util.parse_certificate` with `parse_certificates` which returns a list
+  *** Replace function `ckman.util.parse_certificate` with `parse_certificates` which returns a list
 
 * Version 1.0.1 (released 2018-10-10)
  ** Support for YubiKey 5A
@@ -210,14 +210,14 @@
 
 * Version 0.7.0 (released 2018-05-07)
  ** Support for YubiKey Preview.
- ** Add command to configure enabled applications over USB and NFC. See ykman config -h.
- ** Add command for selecting which slot to use for NDEF. See ykman otp ndef -h.
+ ** Add command to configure enabled applications over USB and NFC. See ckman config -h.
+ ** Add command for selecting which slot to use for NDEF. See ckman otp ndef -h.
 
 * Version 0.6.1 (released 2018-04-16)
- ** Support for YubiKeys with FIDO2. See ykman fido -h
+ ** Support for YubiKeys with FIDO2. See ckman fido -h
  ** Report the form factor for YubiKeys that support it.
- ** OTP: slot command is now called otp. See ykman otp -h for all changes.
- ** Static password: Add support for different keyboard layouts. See ykman otp static -h
+ ** OTP: slot command is now called otp. See ckman otp -h for all changes.
+ ** Static password: Add support for different keyboard layouts. See ckman otp static -h
  ** PIV: Signatures for CSRs are now correct.
  ** PIV: Commands on slots with PIN policy ALWAYS no longer fail if the YubiKey has a management key protected by PIN.
  ** Mode: The U2F mode is now called FIDO.
@@ -285,7 +285,7 @@
  ** OATH: Credential filtering is now working properly on Python 2.
 
 * Version 0.4.0 (released 2017-06-19)
- ** Added PIV support. The tool and library now supports most of the PIV functionality found on the YubiKey 4 and NEO. To list the available commands, run ykman piv -h.
+ ** Added PIV support. The tool and library now supports most of the PIV functionality found on the YubiKey 4 and NEO. To list the available commands, run ckman piv -h.
  ** Mode command now supports adding and removing modes incrementally.
 
 * Version 0.3.3 (released 2017-05-08)
@@ -303,7 +303,7 @@
  ** Bugfix: The flag for showing hidden credentials was not working correctly for the oath code command.
 
 * Version 0.3.0 (released 2017-01-23)
- ** OATH functionality added. The tool now exposes the OATH functionality found on the YubiKey 4 and NEO. To list the available commands, run ykman oath -h.
+ ** OATH functionality added. The tool now exposes the OATH functionality found on the YubiKey 4 and NEO. To list the available commands, run ckman oath -h.
  ** Added support for randomly generated static passwords.
 
 * Version 0.2.0 (released 2016-11-23)

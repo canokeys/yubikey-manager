@@ -25,8 +25,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from yubikit.core.smartcard import ApduError, SW
-from yubikit.oath import OathSession, Credential, OATH_TYPE
+from canokit.core.smartcard import ApduError, SW
+from canokit.oath import OathSession, Credential, OATH_TYPE
 from time import time
 from typing import Optional
 

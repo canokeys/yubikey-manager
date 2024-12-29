@@ -1,4 +1,4 @@
-from yubikit.management import FORM_FACTOR
+from canokit.management import FORM_FACTOR
 
 
 def test_form_factor_from_code():

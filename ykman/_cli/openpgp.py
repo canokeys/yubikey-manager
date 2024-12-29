@@ -25,8 +25,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from yubikit.core.smartcard import ApduError, SW, SmartCardConnection
-from yubikit.openpgp import OpenPgpSession, UIF, PIN_POLICY, KEY_REF as _KEY_REF
+from canokit.core.smartcard import ApduError, SW, SmartCardConnection
+from canokit.openpgp import OpenPgpSession, UIF, PIN_POLICY, KEY_REF as _KEY_REF
 from ..util import parse_certificates, parse_private_key
 from ..openpgp import get_openpgp_info
 from .util import (
@@ -51,7 +51,7 @@ class KEY_REF(IntEnum):
     DEC = 0x02
     AUT = 0x03
     ATT = 0x81
-    ENC = 0x02  # Alias for backwards compatibility, will be removed in ykman 6
+    ENC = 0x02  # Alias for backwards compatibility, will be removed in ckman 6
 
     def __getattribute__(self, name: str):
         return _KEY_REF(self).__getattribute__(name)
@@ -72,11 +72,11 @@ def openpgp(ctx):
 
     \b
       Set the retries for PIN, Reset Code and Admin PIN to 10:
-      $ ykman openpgp access set-retries 10 10 10
+      $ ckman openpgp access set-retries 10 10 10
 
     \b
       Require touch to use the authentication key:
-      $ ykman openpgp keys set-touch aut on
+      $ ckman openpgp keys set-touch aut on
     """
     dev = ctx.obj["device"]
     conn = dev.open_connection(SmartCardConnection)
