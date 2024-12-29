@@ -76,7 +76,7 @@ def oath(ctx):
 
     \b
       Set a password for the OATH application:
-      $ ykman oath access change-password
+      $ ykman oath access change
     """
 
     dev = ctx.obj["device"]
@@ -356,9 +356,7 @@ def _string_id(credential):
 
 
 def _error_multiple_hits(ctx, hits):
-    click.echo(
-        "Error: Multiple matches, please make the query more specific.", err=True
-    )
+    click.echo("Error: Multiple matches, make the query more specific.", err=True)
     click.echo("", err=True)
     for cred in hits:
         click.echo(_string_id(cred), err=True)
@@ -618,7 +616,7 @@ def code(ctx, show_hidden, query, single, password, remember):
 
     Generate codes from OATH accounts stored on the YubiKey.
     Provide a query string to match one or more specific accounts.
-    Accounts of type HOTP, or those that require touch, requre a single match to be
+    Accounts of type HOTP, or those that require touch, require a single match to be
     triggered.
     """
 

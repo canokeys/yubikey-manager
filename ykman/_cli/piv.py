@@ -27,6 +27,7 @@
 
 from yubikit.core import NotSupportedError
 from yubikit.core.smartcard import SmartCardConnection
+from yubikit.management import CAPABILITY
 from yubikit.piv import (
     PivSession,
     InvalidPinError,
@@ -220,6 +221,13 @@ def reset(ctx, force):
     This action will wipe all data and restore factory settings for
     the PIV application on the YubiKey.
     """
+    info = ctx.obj["info"]
+    if CAPABILITY.PIV in info.reset_blocked:
+        raise CliFail(
+            "Cannot perform PIV reset when biometrics are configured, "
+            "use 'ykman config reset' for full factory reset."
+        )
+
     force or click.confirm(
         "WARNING! This will delete all stored PIV data and restore factory "
         "settings. Proceed?",
@@ -275,6 +283,31 @@ def set_pin_retries(ctx, management_key, pin, pin_retries, puk_retries, force):
         raise CliFail("Setting pin retries failed.")
 
 
+def _do_change_pin_puk(pin_complexity, name, current, new, fn):
+    def validate_pin_length(pin, prefix):
+        unit = "characters" if pin_complexity else "bytes"
+        pin_len = len(pin) if pin_complexity else len(pin.encode())
+        if not 6 <= pin_len <= 8:
+            raise CliFail(f"{prefix} {name} must be between 6 and 8 {unit} long.")
+
+    validate_pin_length(current, "Current")
+    validate_pin_length(new, "New")
+
+    try:
+        fn()
+        click.echo(f"New {name} set.")
+    except InvalidPinError as e:
+        attempts = e.attempts_remaining
+        if attempts:
+            raise CliFail(f"{name} change failed - %d tries left." % attempts)
+        else:
+            raise CliFail(f"{name} is blocked.")
+    except ApduError as e:
+        if e.sw == SW.CONDITIONS_NOT_SATISFIED:
+            raise CliFail(f"{name} does not meet complexity requirement.")
+        raise
+
+
 @access.command("change-pin")
 @click.pass_context
 @click.option("-P", "--pin", help="current PIN code")
@@ -283,11 +316,11 @@ def change_pin(ctx, pin, new_pin):
     """
     Change the PIN code.
 
-    The PIN must be between 6 and 8 characters long, and supports any type of
+    The PIN must be between 6 and 8 bytes long, and supports any type of
     alphanumeric characters. For cross-platform compatibility, numeric PINs are
     recommended.
     """
-
+    info = ctx.obj["info"]
     session = ctx.obj["session"]
 
     if not pin:
@@ -301,21 +334,13 @@ def change_pin(ctx, pin, new_pin):
             confirmation_prompt=True,
         )
 
-    if not _valid_pin_length(pin):
-        ctx.fail("Current PIN must be between 6 and 8 characters long.")
-
-    if not _valid_pin_length(new_pin):
-        ctx.fail("New PIN must be between 6 and 8 characters long.")
-
-    try:
-        pivman_change_pin(session, pin, new_pin)
-        click.echo("New PIN set.")
-    except InvalidPinError as e:
-        attempts = e.attempts_remaining
-        if attempts:
-            raise CliFail("PIN change failed - %d tries left." % attempts)
-        else:
-            raise CliFail("PIN is blocked.")
+    _do_change_pin_puk(
+        info.pin_complexity,
+        "PIN",
+        pin,
+        new_pin,
+        lambda: pivman_change_pin(session, pin, new_pin),
+    )
 
 
 @access.command("change-puk")
@@ -327,10 +352,12 @@ def change_puk(ctx, puk, new_puk):
     Change the PUK code.
 
     If the PIN is lost or blocked it can be reset using a PUK.
-    The PUK must be between 6 and 8 characters long, and supports any type of
+    The PUK must be between 6 and 8 bytes long, and supports any type of
     alphanumeric characters.
     """
+    info = ctx.obj["info"]
     session = ctx.obj["session"]
+
     if not puk:
         puk = _prompt_pin("Enter the current PUK")
     if not new_puk:
@@ -342,21 +369,13 @@ def change_puk(ctx, puk, new_puk):
             confirmation_prompt=True,
         )
 
-    if not _valid_pin_length(puk):
-        ctx.fail("Current PUK must be between 6 and 8 characters long.")
-
-    if not _valid_pin_length(new_puk):
-        ctx.fail("New PUK must be between 6 and 8 characters long.")
-
-    try:
-        session.change_puk(puk, new_puk)
-        click.echo("New PUK set.")
-    except InvalidPinError as e:
-        attempts = e.attempts_remaining
-        if attempts:
-            raise CliFail("PUK change failed - %d tries left." % attempts)
-        else:
-            raise CliFail("PUK is blocked.")
+    _do_change_pin_puk(
+        info.pin_complexity,
+        "PUK",
+        puk,
+        new_puk,
+        lambda: session.change_puk(puk, new_puk),
+    )
 
 
 @access.command("change-management-key")
@@ -461,7 +480,7 @@ def change_management_key(
                 click.echo(f"Generated management key: {new_management_key.hex()}")
         elif force:
             ctx.fail(
-                "New management key not given. Please remove the --force "
+                "New management key not given. Remove the --force "
                 "flag, or set the --generate flag or the "
                 "--new-management-key option."
             )
@@ -504,7 +523,11 @@ def unblock_pin(ctx, puk, new_pin):
         puk = click_prompt("Enter PUK", default="", show_default=False, hide_input=True)
     if not new_pin:
         new_pin = click_prompt(
-            "Enter a new PIN", default="", show_default=False, hide_input=True
+            "Enter a new PIN",
+            default="",
+            show_default=False,
+            hide_input=True,
+            confirmation_prompt=True,
         )
     try:
         session.unblock_pin(puk, new_pin)
@@ -515,6 +538,10 @@ def unblock_pin(ctx, puk, new_pin):
             raise CliFail("PIN unblock failed - %d tries left." % attempts)
         else:
             raise CliFail("PUK is blocked.")
+    except ApduError as e:
+        if e.sw == SW.CONDITIONS_NOT_SATISFIED:
+            raise CliFail("PIN does not meet complexity requirement.")
+        raise
 
 
 @piv.group()
@@ -686,7 +713,7 @@ def metadata(ctx, slot):
     except ApduError as e:
         if e.sw == SW.REFERENCE_DATA_NOT_FOUND:
             raise CliFail(f"No key stored in slot {slot}.")
-        raise e
+        raise
 
 
 @keys.command()
@@ -805,7 +832,12 @@ def delete_key(ctx, management_key, pin, slot):
     """
     session = ctx.obj["session"]
     _ensure_authenticated(ctx, pin, management_key)
-    session.delete_key(slot)
+    try:
+        session.delete_key(slot)
+    except ApduError as e:
+        if e.sw == SW.REFERENCE_DATA_NOT_FOUND:
+            raise CliFail(f"No key stored in slot {slot}.")
+        raise
 
 
 @piv.group("certificates")
@@ -893,8 +925,8 @@ def import_certificate(
                 timeout = None
         except ApduError as e:
             if e.sw == SW.REFERENCE_DATA_NOT_FOUND:
-                raise CliFail("No private key in slot {slot}")
-            raise e
+                raise CliFail(f"No private key in slot {slot}")
+            raise
         except NotSupportedError:
             timeout = 1.0
 
@@ -983,7 +1015,8 @@ def generate_certificate(
             timeout = None
     except ApduError as e:
         if e.sw == SW.REFERENCE_DATA_NOT_FOUND:
-            raise CliFail("No private key in slot {slot}")
+            raise CliFail(f"No private key in slot {slot}.")
+        raise
     except NotSupportedError:
         timeout = 1.0
 
@@ -1055,7 +1088,8 @@ def generate_certificate_signing_request(
             timeout = None
     except ApduError as e:
         if e.sw == SW.REFERENCE_DATA_NOT_FOUND:
-            raise CliFail("No private key in slot {slot}")
+            raise CliFail(f"No private key in slot {slot}.")
+        raise
     except NotSupportedError:
         timeout = 1.0
 
@@ -1173,7 +1207,7 @@ def write_object(ctx, pin, management_key, object_id, data):
     except ApduError as e:
         if e.sw == SW.INCORRECT_PARAMETERS:
             raise CliFail("Something went wrong, is the object id valid?")
-        raise CliFail("Error writing object")
+        raise CliFail("Error writing object.")
 
 
 @objects.command("generate")
@@ -1218,10 +1252,6 @@ def _prompt_management_key(prompt="Enter a management key [blank to use default 
 
 def _prompt_pin(prompt="Enter PIN"):
     return click_prompt(prompt, default="", hide_input=True, show_default=False)
-
-
-def _valid_pin_length(pin):
-    return 6 <= len(pin) <= 8
 
 
 def _ensure_authenticated(

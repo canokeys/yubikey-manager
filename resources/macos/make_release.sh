@@ -19,6 +19,9 @@ SOURCE_DIR="$CWD/ckman"
 # Ensure executable, since we may have unpacked from zip
 chmod +x $SOURCE_DIR/ckman
 
+# Remove Python framework directory as it isn't needed
+rm -rf $SOURCE_DIR/_internal/Python.framework
+
 RELEASE_VERSION=`$SOURCE_DIR/ckman --version | awk '{print $(NF)}'`
 PKG="yubikey-manager-$RELEASE_VERSION-mac.pkg"
 

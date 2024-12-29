@@ -127,7 +127,6 @@ def get_overall_fips_status(device, info):
 
 def _check_fips_status(device, info):
     fips_status = get_overall_fips_status(device, info)
-    click.echo()
 
     click.echo(f"FIPS Approved Mode: {'Yes' if all(fips_status.values()) else 'No'}")
 
@@ -140,7 +139,7 @@ def _check_fips_status(device, info):
 @click.option(
     "-c",
     "--check-fips",
-    help="check if YubiKey is in FIPS Approved mode (YubiKey 4 FIPS only)",
+    help="check if YubiKey is in FIPS Approved mode (4 Series only)",
     is_flag=True,
 )
 @click_command(connections=[SmartCardConnection, OtpConnection, FidoConnection])
@@ -186,18 +185,23 @@ def info(ctx, check_fips):
             if info.config.enabled_capabilities.get(TRANSPORT.NFC)
             else "disabled"
         )
-        click.echo(f"NFC transport is {f_nfc}.")
+        click.echo(f"NFC transport is {f_nfc}")
+    if info.pin_complexity:
+        click.echo("PIN complexity is enforced")
     if info.is_locked:
-        click.echo("Configured capabilities are protected by a lock code.")
-    click.echo()
+        click.echo("Configured capabilities are protected by a lock code")
 
+    click.echo()
     print_app_status_table(
         info.supported_capabilities, info.config.enabled_capabilities
     )
 
     if check_fips:
+        click.echo()
         if is_yk4_fips(info):
             device = ctx.obj["device"]
             _check_fips_status(device, info)
         else:
-            raise CliFail("Unable to check FIPS Approved mode - Not a YubiKey 4 FIPS")
+            raise CliFail(
+                "Unable to check FIPS Approved mode - Not a YubiKey FIPS (4 Series)"
+            )

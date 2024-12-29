@@ -1,13 +1,21 @@
-* Version 5.3.0 (released 2023-01-30)
+* Version 5.4.0 (released)
+ * Support for YubiKey Bio Multi-protocol Edition.
+ * CLI: Improve error messages for several failures.
+ * Attempt to send SIGHUP to yubikey-agent if it is blocking the connection.
+ * Bugfix: Allow "fido config" to work when no PIN is set on the YubiKey.
+ * Bugfix: MacOS - Fix race condition resulting in unneeded delay in fido commands over
+   USB.
+ * Bugfix: Linux - Fix error when listing OTP devices when no YubiKeys are attached.
+ * Bugfix: OpenPGP - Fix RSA key generation on YubiKey NEO.
+
+* Version 5.3.0 (released 2024-01-31)
  ** FIDO: Add new CLI commands for PIN management and authenticator config
     (force-change, set-min-length, toggle-always-uv, enable-ep-attestation).
- ** PIV: Support new key types on supported devices (RSA 3072/4096, Curve25519).
- ** PIV: Support for moving and deleting keys on supported devices.
  ** PIV: Improve handling of legacy "PUK blocked" flag.
  ** PIV: Improve handling of malformed certificates.
  ** PIV: Display key information in "piv info" output on supported devices.
  ** OTP: Fix some commands incorrectly showing errors when used over NFC/CCID.
- ** Add tab-completion YubiKey serial numbers and NRC readers.
+ ** Add tab-completion for YubiKey serial numbers and NFC readers.
 
 * Version 5.2.1 (released 2023-10-10)
  ** Add support for Python 3.12.

@@ -49,7 +49,7 @@ from .core.smartcard import AID, SmartCardConnection, SmartCardProtocol
 from fido2.hid import CAPABILITY as CTAP_CAPABILITY
 
 from enum import IntEnum, IntFlag, unique
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional, Union, Mapping
 import abc
 import struct
@@ -97,7 +97,12 @@ class CAPABILITY(IntFlag):
         if self & (CAPABILITY.U2F | CAPABILITY.FIDO2):
             ifaces |= USB_INTERFACE.FIDO
         if self & (
-            CAPABILITY.OATH | CAPABILITY.PIV | CAPABILITY.OPENPGP | CAPABILITY.HSMAUTH
+            0x4  # General CCID bit
+            | 0x400  # Management over CCID bit
+            | CAPABILITY.OATH
+            | CAPABILITY.PIV
+            | CAPABILITY.OPENPGP
+            | CAPABILITY.HSMAUTH
         ):
             ifaces |= USB_INTERFACE.CCID
         return ifaces
@@ -171,16 +176,25 @@ TAG_UNLOCK = 0x0B
 TAG_REBOOT = 0x0C
 TAG_NFC_SUPPORTED = 0x0D
 TAG_NFC_ENABLED = 0x0E
+TAG_IAP_DETECTION = 0x0F
+TAG_MORE_DATA = 0x10
+TAG_FREE_FORM = 0x11
+TAG_HID_INIT_DELAY = 0x12
+TAG_PART_NUMBER = 0x13
+TAG_PIN_COMPLEXITY = 0x16
+TAG_NFC_RESTRICTED = 0x17
+TAG_RESET_BLOCKED = 0x18
 
 
 @dataclass
 class DeviceConfig:
     """Management settings for YubiKey which can be configured by the user."""
 
-    enabled_capabilities: Mapping[TRANSPORT, CAPABILITY]
-    auto_eject_timeout: Optional[int]
-    challenge_response_timeout: Optional[int]
-    device_flags: Optional[DEVICE_FLAG]
+    enabled_capabilities: Mapping[TRANSPORT, CAPABILITY] = field(default_factory=dict)
+    auto_eject_timeout: Optional[int] = None
+    challenge_response_timeout: Optional[int] = None
+    device_flags: Optional[DEVICE_FLAG] = None
+    nfc_restricted: Optional[bool] = None
 
     def get_bytes(
         self,
@@ -207,6 +221,8 @@ class DeviceConfig:
             buf += Tlv(TAG_DEVICE_FLAGS, int2bytes(self.device_flags))
         if new_lock_code:
             buf += Tlv(TAG_CONFIG_LOCK, new_lock_code)
+        if self.nfc_restricted is not None:
+            buf += Tlv(TAG_NFC_RESTRICTED, b"\1" if self.nfc_restricted else b"\0")
         if len(buf) > 0xFF:
             raise NotSupportedError("DeviceConfiguration too large")
         return int2bytes(len(buf)) + buf
@@ -224,6 +240,8 @@ class DeviceInfo:
     is_locked: bool
     is_fips: bool = False
     is_sky: bool = False
+    pin_complexity: bool = False
+    reset_blocked: CAPABILITY = CAPABILITY(0)
 
     def has_transport(self, transport: TRANSPORT) -> bool:
         return transport in self.supported_capabilities
@@ -232,7 +250,12 @@ class DeviceInfo:
     def parse(cls, encoded: bytes, default_version: Version) -> "DeviceInfo":
         if len(encoded) - 1 != encoded[0]:
             raise BadResponseError("Invalid length")
-        data = Tlv.parse_dict(encoded[1:])
+        return cls.parse_tlvs(Tlv.parse_dict(encoded[1:]), default_version)
+
+    @classmethod
+    def parse_tlvs(
+        cls, data: Mapping[int, bytes], default_version: Version
+    ) -> "DeviceInfo":
         locked = data.get(TAG_CONFIG_LOCK) == b"\1"
         serial = bytes2int(data.get(TAG_SERIAL, b"\0")) or None
         ff_value = bytes2int(data.get(TAG_FORM_FACTOR, b"\0"))
@@ -260,9 +283,12 @@ class DeviceInfo:
         if TAG_NFC_SUPPORTED in data:  # YK with NFC
             supported[TRANSPORT.NFC] = CAPABILITY(bytes2int(data[TAG_NFC_SUPPORTED]))
             enabled[TRANSPORT.NFC] = CAPABILITY(bytes2int(data[TAG_NFC_ENABLED]))
+        nfc_restricted = data.get(TAG_NFC_RESTRICTED, b"\0") == b"\1"
+        pin_complexity = data.get(TAG_PIN_COMPLEXITY, b"\0") == b"\1"
+        reset_blocked = CAPABILITY(bytes2int(data.get(TAG_RESET_BLOCKED, b"\0")))
 
         return cls(
-            DeviceConfig(enabled, auto_eject_to, chal_resp_to, flags),
+            DeviceConfig(enabled, auto_eject_to, chal_resp_to, flags, nfc_restricted),
             serial,
             version,
             form_factor,
@@ -270,6 +296,8 @@ class DeviceInfo:
             locked,
             fips,
             sky,
+            pin_complexity,
+            reset_blocked,
         )
 
 
@@ -328,7 +356,7 @@ class _Backend(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def read_config(self) -> bytes:
+    def read_config(self, page: int = 0) -> bytes:
         ...
 
     @abc.abstractmethod
@@ -355,8 +383,10 @@ class _ManagementOtpBackend(_Backend):
                 return  # ProgSeq isn't updated by set mode when empty
             raise
 
-    def read_config(self):
-        response = self.protocol.send_and_receive(SLOT_YK4_CAPABILITIES)
+    def read_config(self, page: int = 0):
+        response = self.protocol.send_and_receive(
+            SLOT_YK4_CAPABILITIES, int2bytes(page)
+        )
         r_len = response[0]
         if check_crc(response[: r_len + 1 + 2]):
             return response[: r_len + 1]
@@ -427,8 +457,8 @@ class _ManagementSmartCardBackend(_Backend):
         else:
             self.protocol.send_apdu(0, INS_SET_MODE, P1_DEVICE_CONFIG, 0, data)
 
-    def read_config(self):
-        return self.protocol.send_apdu(0, INS_READ_CONFIG, 0, 0)
+    def read_config(self, page: int = 0):
+        return self.protocol.send_apdu(0, INS_READ_CONFIG, page, 0)
 
     def write_config(self, config):
         self.protocol.send_apdu(0, INS_WRITE_CONFIG, 0, 0, config)
@@ -472,8 +502,8 @@ class _ManagementCtapBackend(_Backend):
     def set_mode(self, data):
         self.ctap.call(CTAP_YUBIKEY_DEVICE_CONFIG, data)
 
-    def read_config(self):
-        return self.ctap.call(CTAP_READ_CONFIG)
+    def read_config(self, page: int = 0):
+        return self.ctap.call(CTAP_READ_CONFIG, int2bytes(page))
 
     def write_config(self, config):
         self.ctap.call(CTAP_WRITE_CONFIG, config)
@@ -538,7 +568,20 @@ class ManagementSession:
         if self.backend.is_cano:
             return self.build_device_info()
         require_version(self.version, (4, 1, 0))
-        return DeviceInfo.parse(self.backend.read_config(), self.version)
+        more_data = True
+        tlvs = {}
+        page = 0
+        while more_data:
+            logger.debug(f"Reading DeviceInfo page: {page}")
+            encoded = self.backend.read_config(page)
+            if len(encoded) - 1 != encoded[0]:
+                raise BadResponseError("Invalid length")
+            data = Tlv.parse_dict(encoded[1:])
+            more_data = data.pop(TAG_MORE_DATA, 0) == b"\1"
+            tlvs.update(data)
+            page += 1
+
+        return DeviceInfo.parse_tlvs(tlvs, self.version)
 
     def write_device_config(
         self,
@@ -559,7 +602,7 @@ class ManagementSession:
             raise ValueError("Lock code must be 16 bytes")
         if new_lock_code is not None and len(new_lock_code) != 16:
             raise ValueError("Lock code must be 16 bytes")
-        config = config or DeviceConfig({}, None, None, None)
+        config = config or DeviceConfig()
         logger.debug(
             f"Writing device config: {config}, reboot: {reboot}, "
             f"current lock code: {cur_lock_code is not None}, "
@@ -594,9 +637,21 @@ class ManagementSession:
             if USB_INTERFACE.OTP in mode.interfaces:
                 usb_enabled |= CAPABILITY.OTP
             if USB_INTERFACE.CCID in mode.interfaces:
-                usb_enabled |= CAPABILITY.OATH | CAPABILITY.PIV | CAPABILITY.OPENPGP
+                usb_enabled |= (
+                    CAPABILITY.OATH
+                    | CAPABILITY.PIV
+                    | CAPABILITY.OPENPGP
+                    | CAPABILITY.HSMAUTH
+                    | 0x400  # Management over CCID bit
+                )
             if USB_INTERFACE.FIDO in mode.interfaces:
                 usb_enabled |= CAPABILITY.U2F | CAPABILITY.FIDO2
+
+            # Overlay with supported capabilities
+            supported = self.read_device_info().supported_capabilities.get(
+                TRANSPORT.USB, 0
+            )
+            usb_enabled = usb_enabled & supported
             logger.debug(f"Delegating to DeviceConfig with usb_enabled: {usb_enabled}")
             # N.B: reboot=False, since we're using the older set_mode command
             self.write_device_config(
@@ -604,7 +659,6 @@ class ManagementSession:
                     {TRANSPORT.USB: usb_enabled},
                     auto_eject_timeout,
                     chalresp_timeout,
-                    None,
                 )
             )
         else:
