@@ -1,31 +1,40 @@
-== YubiKey Manager CLI
-image:https://github.com/Yubico/yubikey-manager/actions/workflows/source-package.yml/badge.svg["Source package build", link="https://github.com/Yubico/yubikey-manager/actions/workflows/source-package.yml"]
-image:https://github.com/Yubico/yubikey-manager/actions/workflows/windows.yml/badge.svg["Windows build", link="https://github.com/Yubico/yubikey-manager/actions/workflows/windows.yml"]
-image:https://github.com/Yubico/yubikey-manager/actions/workflows/macOS.yml/badge.svg["MacOS build", link="https://github.com/Yubico/yubikey-manager/actions/workflows/macOS.yml"]
-image:https://github.com/Yubico/yubikey-manager/actions/workflows/ubuntu.yml/badge.svg["Ubuntu build", link="https://github.com/Yubico/yubikey-manager/actions/workflows/ubuntu.yml"]
+== CanoKey Manager CLI
+image:https://github.com/canokeys/canokey-manager/actions/workflows/source-package.yml/badge.svg["Source package build", link="https://github.com/canokeys/canokey-manager/actions/workflows/source-package.yml"]
+image:https://github.com/canokeys/canokey-manager/actions/workflows/windows.yml/badge.svg["Windows build", link="https://github.com/canokeys/canokey-manager/actions/workflows/windows.yml"]
+image:https://github.com/canokeys/canokey-manager/actions/workflows/macOS.yml/badge.svg["MacOS build", link="https://github.com/canokeys/canokey-manager/actions/workflows/macOS.yml"]
+image:https://github.com/canokeys/canokey-manager/actions/workflows/ubuntu.yml/badge.svg["Ubuntu build", link="https://github.com/canokeys/canokey-manager/actions/workflows/ubuntu.yml"]
 
-Python 3.10 (or later) library and command line tool for configuring a YubiKey.
-If you're looking for a graphical application, check out  https://developers.yubico.com/yubioath-flutter/[Yubico Authenticator].
+Python 3.10 (or later) library and command line tool for configuring a CanoKey.
+This project is a fork of https://github.com/Yubico/yubikey-manager[YubiKey Manager].
+Install the `canokey-manager` package and use the `ckman` command.
+The Python import namespaces remain `ykman` and `yubikit`.
 
 === Usage
-For more usage information and examples, see the https://docs.yubico.com/software/yubikey/tools/ykman/Using_the_ykman_CLI.html[YubiKey Manager CLI User Manual].
+For upstream usage information and examples, see the https://docs.yubico.com/software/yubikey/tools/ykman/Using_the_ykman_CLI.html[YubiKey Manager CLI User Manual].
+Use `ckman` in place of `ykman`; command availability depends on CanoKey firmware.
+See the link:doc/CanoKey-Firmware-Versions.md[firmware protocol changelog].
+
+The following lists commands applicable to CanoKey. The inherited `config`
+command cannot configure CanoKey applications. Yubico OTP (`otp`), YubiHSM
+Auth (`hsmauth`), and Security Domain (`securitydomain`) are not supported on
+CanoKey, even if their command entries appear in the CLI help.
 
 ....
-Usage: ykman [OPTIONS] COMMAND [ARGS]...
+Usage: ckman [OPTIONS] COMMAND [ARGS]...
 
-  Configure your YubiKey via the command line.
+  Configure your CanoKey via the command line.
 
   Examples:
 
-    List connected YubiKeys, only output serial number:
-    $ ykman list --serials
+    List connected CanoKeys, only output serial number:
+    $ ckman list --serials
 
-    Show information about YubiKey with serial number 0123456:
-    $ ykman --device 0123456 info
+    Show information about CanoKey with serial number 0123456:
+    $ ckman --device 0123456 info
 
 Options:
-  -d, --device SERIAL             specify which YubiKey to interact with by serial number
-  -r, --reader NAME               specify a YubiKey by smart card reader name (can't be used with --device or list)
+  -d, --device SERIAL             specify which CanoKey to interact with by serial number
+  -r, --reader NAME               specify a CanoKey by smart card reader name (can't be used with --device or list)
   -l, --log-level [ERROR|WARNING|INFO|DEBUG|TRAFFIC]
                                   enable logging at given verbosity level
   --log-file FILE                 write log to FILE instead of printing to stderr (requires --log-level)
@@ -34,25 +43,23 @@ Options:
   --full-help                     show --help output, including hidden commands
   -h, --help                      show this message and exit
 
-Commands:
+Commands for CanoKey:
   info     show general information
-  list     list connected YubiKeys
-  config   enable or disable applications
+  list     list connected CanoKeys
   fido     manage the FIDO applications
   oath     manage the OATH application
   openpgp  manage the OpenPGP application
-  otp      manage the YubiOTP application
   piv      manage the PIV application
 ....
 
 The `--help` argument can also be used to get detailed information about specific
 subcommands:
 
-    ykman oath --help
+    ckman oath --help
 
 === Versioning/Compatibility
 This project follows https://semver.org/[Semantic Versioning]. Any project
-depending on yubikey-manager should take care when specifying version ranges to
+depending on canokey-manager should take care when specifying version ranges to
 not include any untested major version, as it is likely to have backwards
 incompatible changes. For example, you should NOT depend on ">=5", as it has no
 upper bound. Instead, depend on ">=5, <6", as any release before 6 will be
@@ -62,108 +69,57 @@ Note that any private variables (names starting with '_') are not part of the
 public API, and may be changed between versions at any time.
 
 === Installation
-YubiKey Manager can be installed independently of platform by using pip (or
+CanoKey Manager can be installed independently of platform by using pip (or
 equivalent):
 
-  pip install --user yubikey-manager
+  pip install --user canokey-manager
 
 On Linux platforms you will need `pcscd` installed and running to be able to
-communicate with a YubiKey over the SmartCard interface. Additionally, you may
-need to set permissions for your user to access YubiKeys via the HID interfaces.
-More information available link:doc/Device_Permissions.adoc[here].
+communicate with a CanoKey over the SmartCard interface. Additionally, you may
+need to set permissions for your user to access CanoKey via the FIDO HID interface.
+See the Smart Card Access and FIDO Access sections in
+link:doc/Device_Permissions.adoc[Device Permissions].
 
-Some of the libraries used by yubikey-manager have C-extensions, and may require
+Some of the libraries used by canokey-manager have C-extensions, and may require
 additional dependencies to build, such as http://www.swig.org/[swig] and
 potentially https://pcsclite.apdu.fr/[PCSC lite].
 
 === Pre-built packages
-Pre-built packages specific to your platform may be available from Yubico or
-third parties. Please refer to your platforms native package manager for
-detailed instructions on how to install, if available.
+Use the `canokey-manager` Python package for this fork. Packages named
+`yubikey-manager` from Yubico or third parties install the upstream project.
 
 ==== Windows
 The CanoKey fork does not publish a standalone Windows installer. Install the
 `canokey-manager` Python package instead; Windows remains covered by CI tests.
 
 ==== MacOS
-A MacOS installer is available to download from the
-https://github.com/Yubico/yubikey-manager/releases/latest[Releases page].
-
-Additionally, packages are available from Homebrew and MacPorts.
-
-===== Input Monitoring access on MacOS
-When running one of the `ykman otp` commands you may run into an error such as:
-`Failed to open device for communication: -536870174`. This indicates a problem
-with the permission to access the OTP (keyboard) USB interface.
-
-To access a YubiKey over this interface the application needs the `Input
-Monitoring` permission. If you are not automatically prompted to grant this
-permission, you may have to do so manually. Note that it is the _terminal_ you
-are using that needs the permission, not the ykman executable.
-
-To add your terminal application to the `Input Monitoring` permission list, go
-to `System Preferences -> Security & Privacy -> Privacy -> Input Monitoring` to
-resolve this.
+Install the Python package above. The
+https://github.com/canokeys/canokey-manager/actions/workflows/macOS.yml[macOS workflow]
+also builds a `ckman.pkg` installer in the `ckman-builds-macos` artifact.
 
 ===== Uninstallation of the MacOS .pkg
-To uninstall yubikey-manager when installed via the pgk installer, run:
+To uninstall CanoKey Manager when installed via the .pkg installer, run:
 
-  $ sudo rm -rf /usr/local/bin/ykman /usr/local/ykman
+  $ sudo rm -rf /usr/local/bin/ckman /usr/local/ckman
 
 ==== Linux
-Packages are available for several Linux distributions by third party package
-maintainers.
-
 Python-specific tools such as pip, pipx, or uv can be used directly to install and
-manage yubikey-manager, and is generally the recommended approach.
+manage canokey-manager, and are the recommended approach.
 
 ==== FreeBSD
-Although not being officially supported on this platform, YubiKey Manager can be
-installed on FreeBSD. It's available via its ports tree or as pre-built package.
-Should you opt to install and use YubiKey Manager on this platform, please be aware
-that it's **NOT** maintained by Yubico.
-
-To install the binary package, use `pkg install pyXY-yubikey-manager`, with `pyXY`
-specifying the version of Python the package was built for, so in order to install
-YubiKey Manager for Python 3.8, use:
-
-  # pkg install py38-yubikey-manager
-
-For more information about how to install packages or ports on FreeBSD, please refer
-to its official documentation: https://docs.freebsd.org/en/books/handbook/ports[FreeBSD Handbook].
-
-In order to use `ykman otp` commands, you need to make sure the _uhid(4)_ driver
-attaches to the USB device:
-
-  # usbconfig ugenX.Y add_quirk UQ_KBD_IGNORE
-  # usbconfig ugenX.Y reset
-
-The correct device to operate on _(ugenX.Y)_ can be determined using
-`usbconfig list`.
-
-When using FreeBSD 13 or higher, you can switch to the more modern _hidraw(4)_
-driver. This allows YubiKey Manager to access OTP HID in a non-exclusive way,
-so that the key will still function as a USB keyboard:
-
-  # sysrc kld_list+="hidraw hkbd"
-  # cat >>/boot/loader.conf<<EOF
-  hw.usb.usbhid.enable="1"
-  hw.usb.quirk.0="0x1050 0x0010 0 0xffff UQ_KBD_IGNORE"  # YKS_OTP
-  hw.usb.quirk.1="0x1050 0x0110 0 0xffff UQ_KBD_IGNORE"  # NEO_OTP
-  hw.usb.quirk.2="0x1050 0x0111 0 0xffff UQ_KBD_IGNORE"  # NEO_OTP_CCID
-  hw.usb.quirk.3="0x1050 0x0114 0 0xffff UQ_KBD_IGNORE"  # NEO_OTP_FIDO
-  hw.usb.quirk.4="0x1050 0x0116 0 0xffff UQ_KBD_IGNORE"  # NEO_OTP_FIDO_CCID
-  hw.usb.quirk.5="0x1050 0x0401 0 0xffff UQ_KBD_IGNORE"  # YK4_OTP
-  hw.usb.quirk.6="0x1050 0x0403 0 0xffff UQ_KBD_IGNORE"  # YK4_OTP_FIDO
-  hw.usb.quirk.7="0x1050 0x0405 0 0xffff UQ_KBD_IGNORE"  # YK4_OTP_CCID
-  hw.usb.quirk.8="0x1050 0x0407 0 0xffff UQ_KBD_IGNORE"  # YK4_OTP_FIDO_CCID
-  hw.usb.quirk.9="0x1050 0x0410 0 0xffff UQ_KBD_IGNORE"  # YKP_OTP_FIDO
-  EOF
-  # reboot
+CanoKey Manager is not covered by this project's CI on FreeBSD. The
+`pyXY-yubikey-manager` port installs upstream YubiKey Manager, not this fork.
 
 ==== From source (for development)
-To install from source, see the link:doc/Development.adoc[development]
-instructions.
+To install and run this fork from source:
+
+  $ git clone https://github.com/canokeys/canokey-manager.git
+  $ cd canokey-manager
+  $ uv sync --locked
+  $ uv run ckman --help
+
+See the link:doc/Development.adoc[development] instructions for dependencies
+and tooling; use the repository above and `ckman` in place of `ykman`.
 
 === Shell completion
 
@@ -171,7 +127,7 @@ Experimental shell completion for the command line tool is available, provided
 by the underlying CLI library (`click`) but it is not enabled by default. To
 enable it, run this command once (for Bash):
 
-  $ source <(_YKMAN_COMPLETE=bash_source ykman | sudo tee /etc/bash_completion.d/ykman)
+  $ source <(_CKMAN_COMPLETE=bash_source ckman | sudo tee /etc/bash_completion.d/ckman)
 
 More information on shell completion (including instructions for other shells) is
 available at:
